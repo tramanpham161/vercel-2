@@ -34,11 +34,11 @@ const Eligibility: React.FC = () => {
     const year = NOW.getFullYear();
 
     if (month >= 0 && month <= 2) { // Jan - Mar
-      return { term: "1 April", window: `15 Jan to 31 Mar ${year}`, deadline: `31 Mar ${year}` };
+      return { term: "1 April", window: `15 Jan to 31 Mar`, deadline: `31 Mar`, id: 'apr' };
     } else if (month >= 3 && month <= 7) { // Apr - Aug
-      return { term: "1 September", window: `12 May to 31 Aug ${year}`, deadline: `31 Aug ${year}` };
+      return { term: "1 September", window: `12 May to 31 Aug`, deadline: `31 Aug`, id: 'sep' };
     } else { // Sept - Dec
-      return { term: "1 January", window: `15 Oct to 31 Dec ${year}`, deadline: `31 Dec ${year}` };
+      return { term: "1 January", window: `15 Oct to 31 Dec`, deadline: `31 Dec`, id: 'jan' };
     }
   };
 
@@ -68,7 +68,6 @@ const Eligibility: React.FC = () => {
     // 2. 9-Month to 2-Year Old Working Parent Entitlements (Full 30h Rollout)
     if (data.childAge === '2y' || data.childAge === '9m-2y' || data.childAge === 'under9m') {
       if (isWorkingEligible) {
-        // Post Sept 2025: All 9m+ working parents get 30 hours
         schemes.push({
           id: '30h-working-infant',
           title: '30 Hours for Working Parents',
@@ -212,6 +211,12 @@ const Eligibility: React.FC = () => {
     const totalFunded = results.reduce((acc, curr) => acc + curr.hours, 0);
     const appWindow = getApplicationWindow();
 
+    const windows = [
+      { id: 'apr', term: '1 April', dates: '15 Jan to 31 Mar' },
+      { id: 'sep', term: '1 September', dates: '12 May to 31 Aug' },
+      { id: 'jan', term: '1 January', dates: '15 Oct to 31 Dec' },
+    ];
+
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 animate-in fade-in zoom-in-95 duration-500">
         <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100">
@@ -250,22 +255,59 @@ const Eligibility: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-8">
-              <h3 className="text-2xl font-bold text-slate-900 border-b pb-4">Qualifying Support Schemes</h3>
-              <div className="grid grid-cols-1 gap-4">
-                {results.length > 0 ? results.map((scheme) => (
-                  <div key={scheme.id} className="p-6 rounded-3xl border border-slate-100 bg-slate-50 group hover:bg-white hover:shadow-lg transition-all duration-300">
-                    <div className="flex justify-between items-start mb-2">
-                       <h4 className="font-bold text-lg text-slate-900">{scheme.title}</h4>
-                       {scheme.hours > 0 && <span className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-[10px] font-black">{scheme.hours} HRS</span>}
+            <div className="space-y-12">
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900 border-b pb-4 mb-6">Qualifying Support Schemes</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {results.length > 0 ? results.map((scheme) => (
+                    <div key={scheme.id} className="p-6 rounded-3xl border border-slate-100 bg-slate-50 group hover:bg-white hover:shadow-lg transition-all duration-300">
+                      <div className="flex justify-between items-start mb-2">
+                         <h4 className="font-bold text-lg text-slate-900">{scheme.title}</h4>
+                         {scheme.hours > 0 && <span className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-[10px] font-black">{scheme.hours} HRS</span>}
+                      </div>
+                      <p className="text-sm text-slate-500 leading-relaxed">{scheme.description}</p>
                     </div>
-                    <p className="text-sm text-slate-500 leading-relaxed">{scheme.description}</p>
-                  </div>
-                )) : (
-                  <div className="p-10 text-center text-slate-400 bg-slate-50 rounded-3xl border-2 border-dashed">
-                    You do not appear to be eligible for any childcare funding schemes at this time.
-                  </div>
-                )}
+                  )) : (
+                    <div className="p-10 text-center text-slate-400 bg-slate-50 rounded-3xl border-2 border-dashed">
+                      You do not appear to be eligible for any childcare funding schemes at this time.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* When to apply table */}
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900 border-b pb-4 mb-6">Application Deadlines</h3>
+                <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                  You should apply as soon as you are eligible to ensure you get your code in time for the start of term. 
+                  Highlight shows the current/next window based on today's date.
+                </p>
+                <div className="overflow-hidden border border-slate-200 rounded-3xl">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50">
+                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">When your child starts term</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">Recommended application window</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {windows.map((win) => (
+                        <tr key={win.id} className={`${appWindow.id === win.id ? 'bg-teal-50/50' : 'bg-white'} border-b border-slate-100 last:border-0`}>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              {appWindow.id === win.id && <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></div>}
+                              <span className={`font-bold ${appWindow.id === win.id ? 'text-teal-900' : 'text-slate-800'}`}>{win.term}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`text-sm ${appWindow.id === win.id ? 'text-teal-700 font-bold' : 'text-slate-600'}`}>{win.dates}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-4 text-[10px] text-slate-400 italic text-center">Source: GOV.UK Childcare Service</p>
               </div>
             </div>
 
