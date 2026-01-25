@@ -11,7 +11,7 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6 text-balance">
-              Childcare funding is now more accessible than ever.
+             Childcare funding doesn’t have to be confusing anymore.
             </h1>
             <p className="text-xl text-teal-50 mb-10 leading-relaxed font-medium">
               Check your eligibility for the full 30-hour entitlement, now available to working parents of children from 9 months to 4 years.
@@ -111,7 +111,7 @@ const Home: React.FC = () => {
       <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl md:text-5xl font-black mb-8">Ready to manage your budget?</h2>
+          <h2 className="text-3xl md:text-5xl font-black mb-8">Want a clearer picture of your childcare costs?</h2>
           <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
             Our tool helps you see the true cost of childcare after all entitlements are applied.
           </p>
