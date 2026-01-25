@@ -1,3 +1,4 @@
+
 export type ChildAge = 'under9m' | '9m-2y' | '2y' | '3-4y' | '5plus';
 
 export type WorkStatus = 'both' | 'one' | 'none' | 'notSure';
@@ -15,18 +16,22 @@ export interface EligibilityData {
 export interface ExtraCost {
   name: string;
   enabled: boolean;
-  price?: number;
+  price?: number; // User custom price
+  defaultPrice: number; // Fallback average
+  unit: 'perDay' | 'perWeek' | 'oneOff';
 }
 
 export type FundingType = 'none' | '15h' | '30h';
 
 export interface CalculatorData {
   hoursPerWeek: number;
+  daysPerWeek: number;
   weeksPerYear: number;
   childcareType: string;
   postcode: string;
-  knownHourlyRate: boolean;
-  hourlyRate: number;
+  rateType: 'hourly' | 'daily';
+  useCustomRate: boolean;
+  customRateValue: number;
   extraCosts: ExtraCost[];
   fundingType: FundingType;
   includeTaxFreeChildcare: boolean;
