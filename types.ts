@@ -19,6 +19,7 @@ export interface ExtraCost {
   price?: number; // User custom price
   defaultPrice: number; // Fallback average
   unit: 'perDay' | 'perWeek' | 'oneOff';
+  description: string;
 }
 
 export type FundingType = 'none' | '15h' | '30h';
