@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { EligibilityData, ChildAge, WorkStatus, Scheme } from '../types';
 import { BENEFIT_OPTIONS, PROVIDER_TYPES } from '../constants';
 
@@ -16,6 +16,11 @@ const Eligibility: React.FC = () => {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Constants for rollout dates
+  const NOW = new Date();
+  const SEPT_2025 = new Date('2025-09-01');
+  const IS_AFTER_SEPT_2025 = NOW >= SEPT_2025;
+
   const totalSteps = 7;
   const nextStep = () => setStep((s: number) => Math.min(s + 1, totalSteps));
   const prevStep = () => setStep((s: number) => Math.max(s - 1, 1));
@@ -26,33 +31,31 @@ const Eligibility: React.FC = () => {
 
   /**
    * Application windows based on GOV.UK "When to apply":
-   * Term start 1 Jan: Apply 15 Oct - 31 Dec
-   * Term start 1 Apr: Apply 15 Jan - 31 Mar
-   * Term start 1 Sep: Apply 12 May - 31 Aug
+   * Matches logic from: https://www.gov.uk/free-childcare-if-working/when-to-apply
    */
   const getApplicationWindow = () => {
-    const now = new Date();
-    const month = now.getMonth(); // 0-indexed
+    const month = NOW.getMonth(); // 0-indexed
+    const year = NOW.getFullYear();
 
     if (month >= 0 && month <= 2) { // Jan - Mar
-      return { term: "1 April", window: "15 January to 31 March", deadline: "31 March" };
+      return { term: "1 April", window: `15 Jan to 31 Mar ${year}`, deadline: `31 Mar ${year}` };
     } else if (month >= 3 && month <= 7) { // Apr - Aug
-      return { term: "1 September", window: "12 May to 31 August", deadline: "31 August" };
+      return { term: "1 September", window: `12 May to 31 Aug ${year}`, deadline: `31 Aug ${year}` };
     } else { // Sept - Dec
-      return { term: "1 January", window: "15 October to 31 December", deadline: "31 December" };
+      return { term: "1 January", window: `15 Oct to 31 Dec ${year}`, deadline: `31 Dec ${year}` };
     }
   };
 
-  const calculateResults = (): Scheme[] => {
+  const results = useMemo(() => {
     const schemes: Scheme[] = [];
     const isWorkingEligible = data.workStatus === 'both' && data.incomeInRange === 'yes';
     
-    // 1. Universal Hours (3-4 year olds)
+    // 1. 3-4 Year Old Entitlements
     if (data.childAge === '3-4y') {
       schemes.push({
         id: '15h-34-universal',
         title: '15 Hours Free (Universal)',
-        description: 'Available to all 3 and 4-year-olds in England regardless of working status. Usually 570 hours per year.',
+        description: 'Standard 570 hours per year available to ALL children in England regardless of work status.',
         hours: 15
       });
 
@@ -60,65 +63,57 @@ const Eligibility: React.FC = () => {
         schemes.push({
           id: '30h-34-working',
           title: '30 Hours for Working Parents',
-          description: 'An additional 15 hours (total 30) for eligible working families. Requires an eligibility code from GOV.UK.',
+          description: 'An additional 15 hours for eligible working families. You must reconfirm your eligibility code every 3 months.',
           hours: 15
         });
       }
     }
 
-    // 2. 2-Year-Old Funding
-    if (data.childAge === '2y') {
+    // 2. 2-Year-Old & 9-Month+ Working Parent Entitlements (Dynamic Rollout)
+    if (data.childAge === '2y' || data.childAge === '9m-2y' || data.childAge === 'under9m') {
       if (isWorkingEligible) {
-        schemes.push({
-          id: '15h-2-working',
-          title: '15 Hours for Working Parents (2yo)',
-          description: 'Working families can access 15 hours of funded childcare. This expands to 30 hours in Sept 2025.',
-          hours: 15
-        });
-      } else if (data.benefits.length > 0) {
-        schemes.push({
-          id: '15h-2-support',
-          title: '15 Hours Support-Based (2yo)',
-          description: 'Available if you receive certain benefits (e.g. Universal Credit, Income Support).',
-          hours: 15
-        });
+        if (IS_AFTER_SEPT_2025) {
+          // Full 30-hour entitlement is now active for all 9m+ working parents
+          schemes.push({
+            id: '30h-working-infant',
+            title: '30 Hours for Working Parents',
+            description: 'As of September 2025, you are entitled to 30 hours of funded childcare per week.',
+            hours: 30
+          });
+        } else {
+          // Currently in the 15-hour phase
+          schemes.push({
+            id: '15h-working-infant',
+            title: '15 Hours for Working Parents',
+            description: 'Available now for babies from 9 months. This will automatically increase to 30 hours in Sept 2025.',
+            hours: 15
+          });
+        }
       }
     }
 
-    // 3. 9 Months + Funding
-    if (data.childAge === '9m-2y' || data.childAge === 'under9m') {
-      if (isWorkingEligible) {
-        schemes.push({
-          id: '15h-9m-working',
-          title: '15 Hours for Working Parents (9m+)',
-          description: 'Rollout began Sept 2024 for babies from 9 months old. Currently 15 hours for eligible working parents.',
-          hours: 15
-        });
-      }
-    }
-
-    // 4. Sept 2025 Expansion Note
-    if (isWorkingEligible && (data.childAge === 'under9m' || data.childAge === '9m-2y' || data.childAge === '2y')) {
+    // 3. 2-Year-Old Support-Based (15 hours)
+    if (data.childAge === '2y' && !isWorkingEligible && data.benefits.length > 0) {
       schemes.push({
-        id: '30h-expansion-2025',
-        title: 'UPCOMING: 30 Hours Expansion (Sept 2025)',
-        description: 'From September 2025, the working parent entitlement increases to 30 hours for all ages from 9 months up to school age.',
-        hours: 0
+        id: '15h-2-support',
+        title: '15 Hours Support-Based (2yo)',
+        description: 'Available to families receiving certain benefits like Universal Credit. This is a static 15-hour entitlement.',
+        hours: 15
       });
     }
 
-    // 5. Tax-Free Childcare (Universal if working)
+    // 4. Tax-Free Childcare (Universal if working)
     if (isWorkingEligible && data.childAge !== '5plus') {
       schemes.push({
         id: 'tfc',
         title: 'Tax-Free Childcare',
-        description: 'For every £8 you pay, the government pays £2. Up to £2,000 per child per year (or £4,000 if disabled).',
+        description: 'The government pays £2 for every £8 you pay into your account. Up to £2,000 per child/year.',
         hours: 0
       });
     }
 
     return schemes;
-  };
+  }, [data, IS_AFTER_SEPT_2025]);
 
   const renderStep = () => {
     switch (step) {
@@ -126,7 +121,7 @@ const Eligibility: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">How old is your child?</h2>
-            <p className="text-slate-500 text-sm">Entitlements change as your child hits key milestones (9m, 2y, 3y).</p>
+            <p className="text-slate-500 text-sm">Entitlements start the term after your child reaches these age milestones.</p>
             <div className="grid grid-cols-1 gap-3">
               {(['under9m', '9m-2y', '2y', '3-4y', '5plus'] as ChildAge[]).map((age: ChildAge) => (
                 <button key={age} onClick={() => updateData({ childAge: age })} className={`p-4 text-left border-2 rounded-2xl transition font-semibold ${data.childAge === age ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-slate-100 hover:border-slate-200'}`}>
@@ -134,7 +129,7 @@ const Eligibility: React.FC = () => {
                    {age === '9m-2y' && '9 months to 2 years'}
                    {age === '2y' && '2 years old'}
                    {age === '3-4y' && '3 to 4 years old'}
-                   {age === '5plus' && '5 years or older'}
+                   {age === '5plus' && 'School age (5+)'}
                 </button>
               ))}
             </div>
@@ -144,7 +139,6 @@ const Eligibility: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Working status</h2>
-            <p className="text-slate-500 text-sm">The 30-hour and 9-month schemes usually require both parents to work.</p>
             <div className="grid grid-cols-1 gap-3">
               {[
                 { val: 'both', label: 'Both parents work (or single parent works)' },
@@ -164,13 +158,13 @@ const Eligibility: React.FC = () => {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Household income</h2>
             <p className="text-slate-500 text-sm leading-relaxed">
-              To be "eligible working parents," you must each earn at least £183/wk (avg) and less than £100,000/year adjusted net income.
+              Working entitlements require each parent to earn roughly £183+/wk (16h at min wage) and under £100k/year.
             </p>
             <div className="grid grid-cols-1 gap-3">
               {['yes', 'no', 'notSure'].map((opt) => (
                 <button key={opt} onClick={() => updateData({ incomeInRange: opt as any })} className={`p-4 text-left border-2 rounded-2xl transition font-semibold ${data.incomeInRange === opt ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-slate-100 hover:border-slate-200'}`}>
                   {opt === 'yes' && 'Yes, our income is in this range'}
-                  {opt === 'no' && 'No, one of us earns >£100k or <Min Wage'}
+                  {opt === 'no' && 'No, one parent earns >£100k or <Min Wage'}
                   {opt === 'notSure' && 'Not sure / Income varies'}
                 </button>
               ))}
@@ -181,14 +175,13 @@ const Eligibility: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Benefits received</h2>
-            <p className="text-slate-500 text-sm">Some 2-year-olds qualify based on family support rather than work.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {BENEFIT_OPTIONS.map((ben) => (
                 <label key={ben} className="flex items-center gap-3 p-3 border rounded-xl hover:bg-slate-50 cursor-pointer transition">
                   <input type="checkbox" checked={data.benefits.includes(ben)} onChange={(e) => {
                     if (e.target.checked) updateData({ benefits: [...data.benefits, ben] });
                     else updateData({ benefits: data.benefits.filter(b => b !== ben) });
-                  }} className="w-5 h-5 accent-teal-600" />
+                  }} className="w-5 h-5 accent-teal-600 rounded" />
                   <span className="text-xs font-medium text-slate-700">{ben}</span>
                 </label>
               ))}
@@ -199,8 +192,7 @@ const Eligibility: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Postcode</h2>
-            <p className="text-slate-500 text-sm">Funding rules apply to England only. This helps us check for local supplements.</p>
-            <input type="text" placeholder="e.g. M1 1AA" value={data.postcode} onChange={(e) => updateData({ postcode: e.target.value.toUpperCase() })} className="w-full p-5 border-2 border-slate-200 rounded-2xl focus:border-teal-600 outline-none uppercase text-2xl font-black text-slate-800 placeholder:text-slate-200" />
+            <input type="text" placeholder="e.g. SW1 or M1" value={data.postcode} onChange={(e) => updateData({ postcode: e.target.value.toUpperCase() })} className="w-full p-5 border-2 border-slate-200 rounded-2xl focus:border-teal-600 outline-none uppercase text-2xl font-black text-slate-800 placeholder:text-slate-200" />
           </div>
         );
       case 6:
@@ -218,15 +210,12 @@ const Eligibility: React.FC = () => {
         );
       case 7:
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Current provider</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {PROVIDER_TYPES.map((type) => (
-                <button key={type} onClick={() => updateData({ providerType: type })} className={`p-4 text-left border-2 rounded-2xl transition font-semibold ${data.providerType === type ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-slate-100 hover:border-slate-200'}`}>
-                  {type}
-                </button>
-              ))}
+          <div className="space-y-6 text-center py-10">
+            <div className="w-20 h-20 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+               <i className="fa-solid fa-flag-checkered"></i>
             </div>
+            <h2 className="text-3xl font-black text-slate-900">Check Eligibility</h2>
+            <p className="text-slate-500 max-w-sm mx-auto">We'll verify your details against GOV.UK 2024/25 rollout rules and Thrive Childcare policies.</p>
           </div>
         );
       default: return null;
@@ -234,7 +223,6 @@ const Eligibility: React.FC = () => {
   };
 
   if (isSubmitted) {
-    const results = calculateResults();
     const totalFunded = results.reduce((acc, curr) => acc + curr.hours, 0);
     const appWindow = getApplicationWindow();
 
@@ -251,35 +239,35 @@ const Eligibility: React.FC = () => {
                 <i className="fa-solid fa-clipboard-check text-4xl"></i>
               </div>
               <h2 className="text-4xl font-black mb-2">Your Eligibility Result</h2>
-              <p className="text-slate-400 font-medium italic">Verified against GOV.UK 2024/25 rollout rules</p>
+              <p className="text-slate-400 font-medium italic">Calculated as of {NOW.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
             </div>
           </div>
           
           <div className="p-10 md:p-14">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
               <div className="bg-teal-50 rounded-[2rem] p-8 border border-teal-100">
-                 <span className="text-teal-600 text-[10px] font-bold block mb-1 uppercase tracking-widest">Calculated Support</span>
-                 <div className="text-5xl font-black text-teal-900">{totalFunded} <span className="text-lg font-normal">hrs/wk</span></div>
-                 <p className="text-xs text-teal-600 mt-2 font-medium">Standard 38-week entitlement</p>
+                 <span className="text-teal-600 text-[10px] font-bold block mb-1 uppercase tracking-widest">Total Weekly Support</span>
+                 <div className="text-5xl font-black text-teal-900">{totalFunded} <span className="text-lg font-normal">hrs</span></div>
+                 <p className="text-xs text-teal-600 mt-2 font-medium">Standard term-time entitlement</p>
               </div>
               
               <div className="bg-amber-50 rounded-[2rem] p-8 border border-amber-100">
                 <h4 className="font-bold text-amber-900 mb-2 flex items-center gap-2">
                   <i className="fa-solid fa-calendar-day text-amber-600"></i>
-                  Next Enrollment: {appWindow.term}
+                  Next Intake: {appWindow.term}
                 </h4>
-                <p className="text-sm text-amber-800 leading-tight mb-4">You must have a code before the deadline to receive funding for this term.</p>
+                <p className="text-sm text-amber-800 leading-tight mb-4">Secure your code before the deadline to receive funding for the {appWindow.term} term.</p>
                 <div className="bg-white p-3 rounded-xl border border-amber-100">
-                   <span className="text-[10px] font-bold text-amber-600 uppercase block mb-1">Apply Between:</span>
-                   <span className="text-sm font-black text-amber-900">{appWindow.window}</span>
+                   <span className="text-[10px] font-bold text-amber-600 uppercase block mb-1">Apply By:</span>
+                   <span className="text-sm font-black text-amber-900">{appWindow.deadline}</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-8">
-              <h3 className="text-2xl font-bold text-slate-900 border-b pb-4">Qualifying Support Schemes</h3>
+              <h3 className="text-2xl font-bold text-slate-900 border-b pb-4">Qualifying Support</h3>
               <div className="grid grid-cols-1 gap-4">
-                {results.map((scheme) => (
+                {results.length > 0 ? results.map((scheme) => (
                   <div key={scheme.id} className="p-6 rounded-3xl border border-slate-100 bg-slate-50 group hover:bg-white hover:shadow-lg transition-all duration-300">
                     <div className="flex justify-between items-start mb-2">
                        <h4 className="font-bold text-lg text-slate-900">{scheme.title}</h4>
@@ -287,25 +275,31 @@ const Eligibility: React.FC = () => {
                     </div>
                     <p className="text-sm text-slate-500 leading-relaxed">{scheme.description}</p>
                   </div>
-                ))}
+                )) : (
+                  <div className="p-10 text-center text-slate-400 bg-slate-50 rounded-3xl border-2 border-dashed">
+                    You do not appear to be eligible for any funding schemes at this time.
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="mt-16 bg-slate-900 rounded-[2.5rem] p-10 md:p-14 text-white">
                 <div className="max-w-xl">
-                  <h4 className="text-3xl font-black mb-4">Secure your funding code</h4>
-                  <p className="text-slate-400 mb-10 leading-relaxed">
-                    Most working parent schemes require a code from the GOV.UK Childcare Service. These must be re-confirmed every 3 months.
-                  </p>
+                  <h4 className="text-3xl font-black mb-4">Official Next Steps</h4>
+                  <ul className="space-y-4 mb-10 text-slate-400 text-sm">
+                    <li className="flex gap-3 items-start"><i className="fa-solid fa-circle-check text-teal-500 mt-1"></i> <span>Check if your provider accepts funded hours.</span></li>
+                    <li className="flex gap-3 items-start"><i className="fa-solid fa-circle-check text-teal-500 mt-1"></i> <span>Get your 11-digit eligibility code via GOV.UK Childcare Service.</span></li>
+                    <li className="flex gap-3 items-start"><i className="fa-solid fa-circle-check text-teal-500 mt-1"></i> <span><strong>Critical:</strong> Reconfirm your eligibility code every 3 months.</span></li>
+                  </ul>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <a href="https://www.gov.uk/apply-30-hours-free-childcare" target="_blank" className="bg-teal-600 text-white px-8 py-4 rounded-2xl font-bold text-center hover:bg-teal-500 transition shadow-xl shadow-teal-600/20">Apply on GOV.UK</a>
-                    <button onClick={() => setIsSubmitted(false)} className="bg-slate-800 text-slate-300 px-8 py-4 rounded-2xl font-bold text-center border border-slate-700 hover:bg-slate-700 transition">Start Again</button>
+                    <a href="https://www.gov.uk/apply-30-hours-free-childcare" target="_blank" rel="noopener noreferrer" className="bg-teal-600 text-white px-8 py-4 rounded-2xl font-bold text-center hover:bg-teal-500 transition shadow-xl shadow-teal-600/20">Apply on GOV.UK</a>
+                    <button onClick={() => setIsSubmitted(false)} className="bg-slate-800 text-slate-300 px-8 py-4 rounded-2xl font-bold text-center border border-slate-700 hover:bg-slate-700 transition">Adjust Answers</button>
                   </div>
                 </div>
             </div>
             
-            <p className="mt-8 text-center text-[10px] text-slate-400 font-medium">
-              Information based on GOV.UK "What you'll get" guidance. Always verify with your local provider as regional variations may apply.
+            <p className="mt-8 text-center text-[10px] text-slate-400 font-medium leading-relaxed max-w-lg mx-auto">
+              This report is based on GOV.UK guidelines as of {NOW.getFullYear()}. Funding only covers basic childcare delivery; meals and extras are typically charged separately. Always confirm final costs with your provider.
             </p>
           </div>
         </div>
@@ -317,11 +311,11 @@ const Eligibility: React.FC = () => {
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="mb-12">
         <div className="flex justify-between items-end mb-4">
-          <span className="text-teal-600 font-bold text-[10px] uppercase tracking-widest">Eligibility Step {step} of {totalSteps}</span>
-          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{Math.round((step / totalSteps) * 100)}%</span>
+          <span className="text-teal-600 font-bold text-[10px] uppercase tracking-widest">Eligibility Check ({Math.round((step / totalSteps) * 100)}%)</span>
+          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Step {step}/{totalSteps}</span>
         </div>
         <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-          <div className="h-full bg-teal-600 transition-all duration-1000 ease-in-out" style={{ width: `${(step / totalSteps) * 100}%` }}></div>
+          <div className="h-full bg-teal-600 transition-all duration-700" style={{ width: `${(step / totalSteps) * 100}%` }}></div>
         </div>
       </div>
 
@@ -332,7 +326,7 @@ const Eligibility: React.FC = () => {
         <div className="mt-12 flex items-center justify-between pt-8 border-t border-slate-100">
           <button onClick={prevStep} disabled={step === 1} className={`font-bold transition-all px-6 py-3 rounded-xl ${step === 1 ? 'opacity-0 cursor-default' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}>Back</button>
           <button onClick={step === totalSteps ? () => setIsSubmitted(true) : nextStep} className="bg-teal-600 text-white px-10 py-4 rounded-2xl font-bold shadow-xl shadow-teal-600/20 hover:bg-teal-700 transition-all active:scale-95">
-            {step === totalSteps ? 'See Eligibility' : 'Continue'}
+            {step === totalSteps ? 'See Result' : 'Continue'}
           </button>
         </div>
       </div>
