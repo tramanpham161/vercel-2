@@ -16,11 +16,8 @@ const Eligibility: React.FC = () => {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Constants for rollout dates
   const NOW = new Date();
-  const SEPT_2025 = new Date('2025-09-01');
-  const IS_AFTER_SEPT_2025 = NOW >= SEPT_2025;
-
+  
   const totalSteps = 7;
   const nextStep = () => setStep((s: number) => Math.min(s + 1, totalSteps));
   const prevStep = () => setStep((s: number) => Math.max(s - 1, 1));
@@ -30,8 +27,7 @@ const Eligibility: React.FC = () => {
   };
 
   /**
-   * Application windows based on GOV.UK "When to apply":
-   * Matches logic from: https://www.gov.uk/free-childcare-if-working/when-to-apply
+   * Application windows based on current GOV.UK guidelines.
    */
   const getApplicationWindow = () => {
     const month = NOW.getMonth(); // 0-indexed
@@ -55,7 +51,7 @@ const Eligibility: React.FC = () => {
       schemes.push({
         id: '15h-34-universal',
         title: '15 Hours Free (Universal)',
-        description: 'Standard 570 hours per year available to ALL children in England regardless of work status.',
+        description: 'Available to ALL children in England regardless of parental work status. Total 570 hours per year.',
         hours: 15
       });
 
@@ -63,32 +59,22 @@ const Eligibility: React.FC = () => {
         schemes.push({
           id: '30h-34-working',
           title: '30 Hours for Working Parents',
-          description: 'An additional 15 hours for eligible working families. You must reconfirm your eligibility code every 3 months.',
+          description: 'An additional 15 hours for eligible working families. You must reconfirm your code every 3 months.',
           hours: 15
         });
       }
     }
 
-    // 2. 2-Year-Old & 9-Month+ Working Parent Entitlements (Dynamic Rollout)
+    // 2. 9-Month to 2-Year Old Working Parent Entitlements (Full 30h Rollout)
     if (data.childAge === '2y' || data.childAge === '9m-2y' || data.childAge === 'under9m') {
       if (isWorkingEligible) {
-        if (IS_AFTER_SEPT_2025) {
-          // Full 30-hour entitlement is now active for all 9m+ working parents
-          schemes.push({
-            id: '30h-working-infant',
-            title: '30 Hours for Working Parents',
-            description: 'As of September 2025, you are entitled to 30 hours of funded childcare per week.',
-            hours: 30
-          });
-        } else {
-          // Currently in the 15-hour phase
-          schemes.push({
-            id: '15h-working-infant',
-            title: '15 Hours for Working Parents',
-            description: 'Available now for babies from 9 months. This will automatically increase to 30 hours in Sept 2025.',
-            hours: 15
-          });
-        }
+        // Post Sept 2025: All 9m+ working parents get 30 hours
+        schemes.push({
+          id: '30h-working-infant',
+          title: '30 Hours for Working Parents',
+          description: 'Full 30-hour entitlement is now active for all eligible working parents of children from 9 months old.',
+          hours: 30
+        });
       }
     }
 
@@ -97,7 +83,7 @@ const Eligibility: React.FC = () => {
       schemes.push({
         id: '15h-2-support',
         title: '15 Hours Support-Based (2yo)',
-        description: 'Available to families receiving certain benefits like Universal Credit. This is a static 15-hour entitlement.',
+        description: 'Available to families receiving specified benefits. This remains a 15-hour weekly entitlement.',
         hours: 15
       });
     }
@@ -107,13 +93,13 @@ const Eligibility: React.FC = () => {
       schemes.push({
         id: 'tfc',
         title: 'Tax-Free Childcare',
-        description: 'The government pays £2 for every £8 you pay into your account. Up to £2,000 per child/year.',
+        description: 'Get up to £2,000 per year per child for childcare costs. The government adds £2 for every £8 you pay.',
         hours: 0
       });
     }
 
     return schemes;
-  }, [data, IS_AFTER_SEPT_2025]);
+  }, [data]);
 
   const renderStep = () => {
     switch (step) {
@@ -158,7 +144,7 @@ const Eligibility: React.FC = () => {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Household income</h2>
             <p className="text-slate-500 text-sm leading-relaxed">
-              Working entitlements require each parent to earn roughly £183+/wk (16h at min wage) and under £100k/year.
+              Working entitlements require each parent to earn at least £183/wk (avg) and under £100k adjusted net income per year.
             </p>
             <div className="grid grid-cols-1 gap-3">
               {['yes', 'no', 'notSure'].map((opt) => (
@@ -214,8 +200,8 @@ const Eligibility: React.FC = () => {
             <div className="w-20 h-20 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
                <i className="fa-solid fa-flag-checkered"></i>
             </div>
-            <h2 className="text-3xl font-black text-slate-900">Check Eligibility</h2>
-            <p className="text-slate-500 max-w-sm mx-auto">We'll verify your details against GOV.UK 2024/25 rollout rules and Thrive Childcare policies.</p>
+            <h2 className="text-3xl font-black text-slate-900">Confirm Details</h2>
+            <p className="text-slate-500 max-w-sm mx-auto">See your final results based on the full 30-hour childcare rollout in England.</p>
           </div>
         );
       default: return null;
@@ -239,7 +225,7 @@ const Eligibility: React.FC = () => {
                 <i className="fa-solid fa-clipboard-check text-4xl"></i>
               </div>
               <h2 className="text-4xl font-black mb-2">Your Eligibility Result</h2>
-              <p className="text-slate-400 font-medium italic">Calculated as of {NOW.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              <p className="text-slate-400 font-medium italic">Current entitlements as of {NOW.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
             </div>
           </div>
           
@@ -248,15 +234,15 @@ const Eligibility: React.FC = () => {
               <div className="bg-teal-50 rounded-[2rem] p-8 border border-teal-100">
                  <span className="text-teal-600 text-[10px] font-bold block mb-1 uppercase tracking-widest">Total Weekly Support</span>
                  <div className="text-5xl font-black text-teal-900">{totalFunded} <span className="text-lg font-normal">hrs</span></div>
-                 <p className="text-xs text-teal-600 mt-2 font-medium">Standard term-time entitlement</p>
+                 <p className="text-xs text-teal-600 mt-2 font-medium">Standard weekly funding credit</p>
               </div>
               
               <div className="bg-amber-50 rounded-[2rem] p-8 border border-amber-100">
                 <h4 className="font-bold text-amber-900 mb-2 flex items-center gap-2">
                   <i className="fa-solid fa-calendar-day text-amber-600"></i>
-                  Next Intake: {appWindow.term}
+                  Next Intake Term: {appWindow.term}
                 </h4>
-                <p className="text-sm text-amber-800 leading-tight mb-4">Secure your code before the deadline to receive funding for the {appWindow.term} term.</p>
+                <p className="text-sm text-amber-800 leading-tight mb-4">Ensure you have your 11-digit code by the deadline to access funding for this term.</p>
                 <div className="bg-white p-3 rounded-xl border border-amber-100">
                    <span className="text-[10px] font-bold text-amber-600 uppercase block mb-1">Apply By:</span>
                    <span className="text-sm font-black text-amber-900">{appWindow.deadline}</span>
@@ -265,7 +251,7 @@ const Eligibility: React.FC = () => {
             </div>
 
             <div className="space-y-8">
-              <h3 className="text-2xl font-bold text-slate-900 border-b pb-4">Qualifying Support</h3>
+              <h3 className="text-2xl font-bold text-slate-900 border-b pb-4">Qualifying Support Schemes</h3>
               <div className="grid grid-cols-1 gap-4">
                 {results.length > 0 ? results.map((scheme) => (
                   <div key={scheme.id} className="p-6 rounded-3xl border border-slate-100 bg-slate-50 group hover:bg-white hover:shadow-lg transition-all duration-300">
@@ -277,7 +263,7 @@ const Eligibility: React.FC = () => {
                   </div>
                 )) : (
                   <div className="p-10 text-center text-slate-400 bg-slate-50 rounded-3xl border-2 border-dashed">
-                    You do not appear to be eligible for any funding schemes at this time.
+                    You do not appear to be eligible for any childcare funding schemes at this time.
                   </div>
                 )}
               </div>
@@ -285,21 +271,21 @@ const Eligibility: React.FC = () => {
 
             <div className="mt-16 bg-slate-900 rounded-[2.5rem] p-10 md:p-14 text-white">
                 <div className="max-w-xl">
-                  <h4 className="text-3xl font-black mb-4">Official Next Steps</h4>
+                  <h4 className="text-3xl font-black mb-4">Immediate Next Steps</h4>
                   <ul className="space-y-4 mb-10 text-slate-400 text-sm">
-                    <li className="flex gap-3 items-start"><i className="fa-solid fa-circle-check text-teal-500 mt-1"></i> <span>Check if your provider accepts funded hours.</span></li>
-                    <li className="flex gap-3 items-start"><i className="fa-solid fa-circle-check text-teal-500 mt-1"></i> <span>Get your 11-digit eligibility code via GOV.UK Childcare Service.</span></li>
-                    <li className="flex gap-3 items-start"><i className="fa-solid fa-circle-check text-teal-500 mt-1"></i> <span><strong>Critical:</strong> Reconfirm your eligibility code every 3 months.</span></li>
+                    <li className="flex gap-3 items-start"><i className="fa-solid fa-circle-check text-teal-500 mt-1"></i> <span>Check with your nursery if they have space and accept funded hours.</span></li>
+                    <li className="flex gap-3 items-start"><i className="fa-solid fa-circle-check text-teal-500 mt-1"></i> <span>Apply for your eligibility code on the official GOV.UK Childcare Service.</span></li>
+                    <li className="flex gap-3 items-start"><i className="fa-solid fa-circle-check text-teal-500 mt-1"></i> <span>Set a reminder: You must reconfirm your eligibility every 3 months.</span></li>
                   </ul>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <a href="https://www.gov.uk/apply-30-hours-free-childcare" target="_blank" rel="noopener noreferrer" className="bg-teal-600 text-white px-8 py-4 rounded-2xl font-bold text-center hover:bg-teal-500 transition shadow-xl shadow-teal-600/20">Apply on GOV.UK</a>
-                    <button onClick={() => setIsSubmitted(false)} className="bg-slate-800 text-slate-300 px-8 py-4 rounded-2xl font-bold text-center border border-slate-700 hover:bg-slate-700 transition">Adjust Answers</button>
+                    <a href="https://www.gov.uk/apply-30-hours-free-childcare" target="_blank" rel="noopener noreferrer" className="bg-teal-600 text-white px-8 py-4 rounded-2xl font-bold text-center hover:bg-teal-500 transition shadow-xl shadow-teal-600/20">Apply Now on GOV.UK</a>
+                    <button onClick={() => setIsSubmitted(false)} className="bg-slate-800 text-slate-300 px-8 py-4 rounded-2xl font-bold text-center border border-slate-700 hover:bg-slate-700 transition">Adjust My Answers</button>
                   </div>
                 </div>
             </div>
             
             <p className="mt-8 text-center text-[10px] text-slate-400 font-medium leading-relaxed max-w-lg mx-auto">
-              This report is based on GOV.UK guidelines as of {NOW.getFullYear()}. Funding only covers basic childcare delivery; meals and extras are typically charged separately. Always confirm final costs with your provider.
+              This report follows current Department for Education policy for England. Funding covers the delivery of childcare; providers may charge for meals and consumables separately.
             </p>
           </div>
         </div>
@@ -311,7 +297,7 @@ const Eligibility: React.FC = () => {
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="mb-12">
         <div className="flex justify-between items-end mb-4">
-          <span className="text-teal-600 font-bold text-[10px] uppercase tracking-widest">Eligibility Check ({Math.round((step / totalSteps) * 100)}%)</span>
+          <span className="text-teal-600 font-bold text-[10px] uppercase tracking-widest">Eligibility Assessment ({Math.round((step / totalSteps) * 100)}%)</span>
           <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Step {step}/{totalSteps}</span>
         </div>
         <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
@@ -326,7 +312,7 @@ const Eligibility: React.FC = () => {
         <div className="mt-12 flex items-center justify-between pt-8 border-t border-slate-100">
           <button onClick={prevStep} disabled={step === 1} className={`font-bold transition-all px-6 py-3 rounded-xl ${step === 1 ? 'opacity-0 cursor-default' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}>Back</button>
           <button onClick={step === totalSteps ? () => setIsSubmitted(true) : nextStep} className="bg-teal-600 text-white px-10 py-4 rounded-2xl font-bold shadow-xl shadow-teal-600/20 hover:bg-teal-700 transition-all active:scale-95">
-            {step === totalSteps ? 'See Result' : 'Continue'}
+            {step === totalSteps ? 'See Eligibility' : 'Continue'}
           </button>
         </div>
       </div>
