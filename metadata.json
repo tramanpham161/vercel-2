@@ -1,0 +1,7 @@
+{
+  "name": "Childcare Checker UK",
+  "description": "A comprehensive tool for parents in England to check eligibility for government funding and estimate childcare costs.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
