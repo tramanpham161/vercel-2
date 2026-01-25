@@ -1,35 +1,31 @@
+
 import React, { useState, ChangeEvent } from 'react';
 import { CalculatorData, ExtraCost, FundingType } from '../types';
 import { PROVIDER_TYPES, CHILDCARE_DATA_2024 } from '../constants';
-
-const EXTRA_COST_AVERAGES: Record<string, number> = {
-  'Meals': 25,
-  'Nappies': 10,
-  'Late pickup fees': 15,
-  'Extra activities': 15
-};
 
 const Calculator: React.FC = () => {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<CalculatorData>({
     hoursPerWeek: 30,
+    daysPerWeek: 3,
     weeksPerYear: 51,
     childcareType: 'Nursery',
     postcode: '',
-    knownHourlyRate: false,
-    hourlyRate: 7.50,
+    rateType: 'hourly',
+    useCustomRate: false,
+    customRateValue: 0,
     extraCosts: [
-      { name: 'Meals', enabled: false },
-      { name: 'Nappies', enabled: false },
-      { name: 'Late pickup fees', enabled: false },
-      { name: 'Extra activities', enabled: false }
+      { name: 'Meals', enabled: false, defaultPrice: CHILDCARE_DATA_2024.extras.meals, unit: 'perDay' },
+      { name: 'Nappies & Consumables', enabled: false, defaultPrice: CHILDCARE_DATA_2024.extras.nappies, unit: 'perDay' },
+      { name: 'Extra Activities', enabled: false, defaultPrice: CHILDCARE_DATA_2024.extras.activities, unit: 'perWeek' },
+      { name: 'Late Pickup Fees', enabled: false, defaultPrice: CHILDCARE_DATA_2024.extras.lateFees, unit: 'oneOff' }
     ],
     fundingType: 'none',
     includeTaxFreeChildcare: true
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const totalSteps = 6;
+  const totalSteps = 7;
   const nextStep = () => setStep((s: number) => Math.min(s + 1, totalSteps));
   const prevStep = () => setStep((s: number) => Math.max(s - 1, 1));
 
@@ -37,59 +33,76 @@ const Calculator: React.FC = () => {
     setData((prev: CalculatorData) => ({ ...prev, ...updates }));
   };
 
-  const getAverageRateInfo = () => {
-    const isLondon = data.postcode.startsWith('SW') || 
-                     data.postcode.startsWith('W') || 
-                     data.postcode.startsWith('E') || 
-                     data.postcode.startsWith('N') || 
-                     data.postcode.startsWith('SE') || 
-                     data.postcode.startsWith('WC') || 
-                     data.postcode.startsWith('EC');
-    
+  const isLondon = (pc: string) => {
+    const p = pc.trim().toUpperCase();
+    return ['SW', 'W', 'E', 'N', 'SE', 'NW', 'WC', 'EC'].some(pref => p.startsWith(pref));
+  };
+
+  const getAverageRate = () => {
+    const london = isLondon(data.postcode);
     const type = data.childcareType.toLowerCase();
-    let rate = CHILDCARE_DATA_2024.rates.default.regional;
-
-    if (type.includes('nursery')) {
-      rate = isLondon ? CHILDCARE_DATA_2024.rates.nursery.london : CHILDCARE_DATA_2024.rates.nursery.regional;
-    } else if (type.includes('childminder')) {
-      rate = isLondon ? CHILDCARE_DATA_2024.rates.childminder.london : CHILDCARE_DATA_2024.rates.childminder.regional;
-    } else if (type.includes('preschool')) {
-      rate = isLondon ? CHILDCARE_DATA_2024.rates.preschool.london : CHILDCARE_DATA_2024.rates.preschool.regional;
-    }
-
-    return { rate, isLondon, year: CHILDCARE_DATA_2024.year };
+    const rateData = (CHILDCARE_DATA_2024.rates as any)[type] || CHILDCARE_DATA_2024.rates.default;
+    return london ? rateData[data.rateType].london : rateData[data.rateType].regional;
   };
 
   const calculateCosts = () => {
-    const rateInfo = getAverageRateInfo();
-    const rate = data.knownHourlyRate ? data.hourlyRate : rateInfo.rate;
-    const baseWeekly = data.hoursPerWeek * rate;
+    const avgRate = getAverageRate();
+    const rate = data.useCustomRate && data.customRateValue > 0 ? data.customRateValue : avgRate;
     
+    // Base childcare cost
+    let baseWeekly = 0;
+    if (data.rateType === 'hourly') {
+      baseWeekly = data.hoursPerWeek * rate;
+    } else {
+      baseWeekly = data.daysPerWeek * rate;
+    }
+
+    // Extra costs
     let weeklyExtras = 0;
-    data.extraCosts.forEach((item: ExtraCost) => {
-      if (item.enabled) {
-        weeklyExtras += item.price !== undefined ? item.price : (EXTRA_COST_AVERAGES[item.name] || 0);
+    data.extraCosts.forEach(cost => {
+      if (cost.enabled) {
+        const val = cost.price !== undefined && cost.price > 0 ? cost.price : cost.defaultPrice;
+        if (cost.unit === 'perDay') weeklyExtras += val * data.daysPerWeek;
+        else if (cost.unit === 'perWeek') weeklyExtras += val;
+        else weeklyExtras += val; // oneOff/late fees treated as weekly occurrence for calc
       }
     });
 
-    let fundingReductionPerWeek = 0;
+    // Funding reduction (standardized to weekly over the year)
+    let weeklyFundingCredit = 0;
     if (data.fundingType !== 'none') {
-      const maxFunded = data.fundingType === '15h' ? 15 : 30;
-      const hoursApplied = Math.min(data.hoursPerWeek, maxFunded);
-      fundingReductionPerWeek = (hoursApplied * rate * 38) / data.weeksPerYear;
+      const fundedHoursLimit = data.fundingType === '15h' ? 15 : 30;
+      const hoursToFund = Math.min(data.hoursPerWeek, fundedHoursLimit);
+      
+      // Conversion logic: if daily rate is used, we estimate an 8-hour day to find hourly equivalent for the credit
+      const effectiveHourly = data.rateType === 'hourly' ? rate : (rate / (data.hoursPerWeek / data.daysPerWeek));
+      
+      // (Hours * Rate * 38 weeks) / weeks per year usage
+      weeklyFundingCredit = (hoursToFund * effectiveHourly * 38) / data.weeksPerYear;
     }
 
-    const weeklyNet = Math.max(0, baseWeekly - fundingReductionPerWeek) + weeklyExtras;
-    const tfcSaving = data.includeTaxFreeChildcare ? Math.min(weeklyNet * 0.20, 2000 / data.weeksPerYear) : 0;
+    const weeklyNetPreTFC = Math.max(0, baseWeekly - weeklyFundingCredit) + weeklyExtras;
+    
+    // Tax-Free Childcare (20% top up, max £2k/year per child)
+    // TFC applies to the net cost paid by the parent for regulated childcare
+    const tfcWeeklyLimit = 2000 / 52;
+    const tfcSaving = data.includeTaxFreeChildcare ? Math.min(weeklyNetPreTFC * 0.20, tfcWeeklyLimit) : 0;
 
-    const weeklyTotal = weeklyNet - tfcSaving;
+    const weeklyTotal = weeklyNetPreTFC - tfcSaving;
     const yearlyTotal = weeklyTotal * data.weeksPerYear;
 
     return {
       weekly: weeklyTotal,
       monthly: yearlyTotal / 12,
       yearly: yearlyTotal,
-      breakdown: { baseRate: rate, gross: baseWeekly + weeklyExtras, funding: fundingReductionPerWeek, tfc: tfcSaving }
+      breakdown: {
+        base: baseWeekly,
+        extras: weeklyExtras,
+        funding: weeklyFundingCredit,
+        tfc: tfcSaving,
+        rateUsed: rate,
+        isAverage: !data.useCustomRate
+      }
     };
   };
 
@@ -98,22 +111,36 @@ const Calculator: React.FC = () => {
       case 1:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Weekly hours</h2>
-            <input type="range" min="0" max="60" value={data.hoursPerWeek} onChange={(e: ChangeEvent<HTMLInputElement>) => updateData({ hoursPerWeek: parseInt(e.target.value) })} className="w-full accent-teal-600" />
-            <div className="text-center p-10 bg-slate-50 rounded-3xl">
-              <span className="text-7xl font-black text-teal-700">{data.hoursPerWeek}</span>
-              <span className="text-xl text-slate-400 font-bold ml-4">hrs/wk</span>
+            <h2 className="text-2xl font-bold text-slate-900">Weekly usage</h2>
+            <div className="space-y-8">
+              <div>
+                <label className="text-sm font-bold text-slate-500 mb-2 block">Hours per week</label>
+                <input type="range" min="1" max="60" value={data.hoursPerWeek} onChange={(e) => updateData({ hoursPerWeek: parseInt(e.target.value) })} className="w-full accent-teal-600" />
+                <div className="text-center mt-2 font-black text-2xl text-teal-700">{data.hoursPerWeek} hrs</div>
+              </div>
+              <div>
+                <label className="text-sm font-bold text-slate-500 mb-2 block">Days per week</label>
+                <div className="flex justify-between gap-2">
+                  {[1, 2, 3, 4, 5].map(d => (
+                    <button key={d} onClick={() => updateData({ daysPerWeek: d })} className={`flex-grow p-3 rounded-xl border-2 font-bold transition ${data.daysPerWeek === d ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-400'}`}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         );
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Usage period</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Weeks per year</h2>
+            <p className="text-slate-500 text-sm">Most nurseries run 51 weeks. Term-time is 38 weeks.</p>
             <div className="grid grid-cols-1 gap-3">
-              {[38, 48, 51].map((w: number) => (
-                <button key={w} onClick={() => updateData({ weeksPerYear: w })} className={`p-5 text-left border-2 rounded-2xl ${data.weeksPerYear === w ? 'border-teal-600 bg-teal-50' : 'border-slate-200'}`}>
+              {[38, 48, 51].map((w) => (
+                <button key={w} onClick={() => updateData({ weeksPerYear: w })} className={`p-5 text-left border-2 rounded-2xl transition ${data.weeksPerYear === w ? 'border-teal-600 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
                   <span className="block font-bold text-lg">{w} weeks</span>
+                  <span className="text-xs text-slate-400">{w === 38 ? 'Term-time only' : 'Year-round care'}</span>
                 </button>
               ))}
             </div>
@@ -122,41 +149,83 @@ const Calculator: React.FC = () => {
       case 3:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Setting & location</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Setting & location</h2>
             <div className="space-y-4">
-              <select value={data.childcareType} onChange={(e: ChangeEvent<HTMLSelectElement>) => updateData({ childcareType: e.target.value })} className="w-full p-4 border-2 border-slate-200 rounded-xl">
-                {PROVIDER_TYPES.map((t: string) => <option key={t} value={t}>{t}</option>)}
-              </select>
-              <input type="text" placeholder="Postcode (e.g. M1)" value={data.postcode} onChange={(e: ChangeEvent<HTMLInputElement>) => updateData({ postcode: e.target.value.toUpperCase() })} className="w-full p-4 border-2 border-slate-200 rounded-xl" />
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Provider Type</label>
+                <select value={data.childcareType} onChange={(e) => updateData({ childcareType: e.target.value })} className="w-full p-4 border-2 border-slate-200 rounded-xl bg-white focus:border-teal-600 outline-none">
+                  {PROVIDER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Postcode (first part)</label>
+                <input type="text" placeholder="e.g. SW1 or M1" value={data.postcode} onChange={(e) => updateData({ postcode: e.target.value.toUpperCase() })} className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-teal-600 outline-none" />
+              </div>
             </div>
           </div>
         );
       case 4:
-        const ri = getAverageRateInfo();
+        const avg = getAverageRate();
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Hourly cost</h2>
-            {!data.knownHourlyRate ? (
-              <div className="p-8 bg-teal-50 rounded-3xl border border-teal-100">
-                <span className="text-xs font-bold text-teal-600 block mb-1">{ri.isLondon ? 'London' : 'Regional'} average</span>
-                <span className="text-3xl font-black text-teal-900">£{ri.rate.toFixed(2)} / hr</span>
-                <button onClick={() => updateData({ knownHourlyRate: true })} className="block mt-4 text-sm font-bold text-teal-700 underline">Enter my specific rate</button>
+            <h2 className="text-2xl font-bold text-slate-900">Cost of care</h2>
+            <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+              <button onClick={() => updateData({ rateType: 'hourly' })} className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${data.rateType === 'hourly' ? 'bg-white shadow text-teal-600' : 'text-slate-500'}`}>Hourly Rate</button>
+              <button onClick={() => updateData({ rateType: 'daily' })} className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${data.rateType === 'daily' ? 'bg-white shadow text-teal-600' : 'text-slate-500'}`}>Daily Rate</button>
+            </div>
+            
+            {!data.useCustomRate ? (
+              <div className="p-8 bg-teal-50 rounded-3xl border border-teal-100 text-center">
+                <span className="text-xs font-bold text-teal-600 block mb-1">Average in {isLondon(data.postcode) ? 'London' : 'your region'}</span>
+                <span className="text-4xl font-black text-teal-900">£{avg.toFixed(2)}<span className="text-lg font-medium">/{data.rateType === 'hourly' ? 'hr' : 'day'}</span></span>
+                <button onClick={() => updateData({ useCustomRate: true, customRateValue: avg })} className="block w-full mt-6 py-3 bg-white border border-teal-200 rounded-xl text-sm font-bold text-teal-700 hover:bg-teal-100 transition">Enter my specific rate</button>
               </div>
             ) : (
-              <input type="number" step="0.01" value={data.hourlyRate} onChange={(e: ChangeEvent<HTMLInputElement>) => updateData({ hourlyRate: parseFloat(e.target.value) })} className="w-full p-4 border-2 border-slate-200 rounded-xl text-xl font-bold" />
+              <div className="space-y-4">
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">£</span>
+                  <input type="number" step="0.01" value={data.customRateValue || ''} onChange={(e) => updateData({ customRateValue: parseFloat(e.target.value) })} className="w-full p-4 pl-8 border-2 border-teal-600 rounded-xl text-xl font-bold text-teal-900 outline-none" placeholder="0.00" />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">per {data.rateType === 'hourly' ? 'hour' : 'day'}</span>
+                </div>
+                <button onClick={() => updateData({ useCustomRate: false })} className="text-slate-400 text-xs font-bold hover:text-teal-600">Switch back to averages</button>
+              </div>
             )}
           </div>
         );
       case 5:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Extra expenses</h2>
-            <div className="space-y-2">
-              {data.extraCosts.map((item: ExtraCost) => (
-                <label key={item.name} className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl cursor-pointer">
-                  <input type="checkbox" checked={item.enabled} onChange={(e: ChangeEvent<HTMLInputElement>) => setData((p: CalculatorData) => ({...p, extraCosts: p.extraCosts.map((ec: ExtraCost) => ec.name === item.name ? {...ec, enabled: e.target.checked} : ec)}))} />
-                  <span className="font-bold">{item.name}</span>
-                </label>
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-slate-900">Extra expenses</h2>
+              <i className="fa-solid fa-circle-info text-slate-300" title="Typical nursery extras"></i>
+            </div>
+            <div className="space-y-3">
+              {data.extraCosts.map((item, idx) => (
+                <div key={item.name} className={`p-4 rounded-2xl border-2 transition ${item.enabled ? 'border-teal-600 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={item.enabled} onChange={(e) => {
+                      const newCosts = [...data.extraCosts];
+                      newCosts[idx].enabled = e.target.checked;
+                      setData({...data, extraCosts: newCosts});
+                    }} className="w-5 h-5 accent-teal-600" />
+                    <span className="font-bold text-slate-800">{item.name}</span>
+                  </label>
+                  {item.enabled && (
+                    <div className="mt-4 pl-8 flex items-center gap-4 animate-in slide-in-from-top-2 duration-300">
+                      <div className="relative flex-grow">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">£</span>
+                        <input type="number" placeholder={item.defaultPrice.toFixed(2)} value={item.price || ''} onChange={(e) => {
+                          const newCosts = [...data.extraCosts];
+                          newCosts[idx].price = parseFloat(e.target.value);
+                          setData({...data, extraCosts: newCosts});
+                        }} className="w-full p-2 pl-6 border rounded-lg text-sm outline-none focus:border-teal-500" />
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        {item.unit === 'perDay' ? 'Daily' : 'Weekly'}
+                      </span>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -164,11 +233,52 @@ const Calculator: React.FC = () => {
       case 6:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Apply support</h2>
-            <div className="grid grid-cols-3 gap-2">
-              {['none', '15h', '30h'].map((f: string) => (
-                <button key={f} onClick={() => updateData({ fundingType: f as FundingType })} className={`p-4 rounded-xl border-2 font-bold ${data.fundingType === f ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-slate-200'}`}>{f === 'none' ? 'None' : f.toUpperCase()}</button>
-              ))}
+            <h2 className="text-2xl font-bold text-slate-900">Government Support</h2>
+            <div className="space-y-6">
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Funded Hours Entitlement</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['none', '15h', '30h'].map((f) => (
+                    <button key={f} onClick={() => updateData({ fundingType: f as FundingType })} className={`p-4 rounded-xl border-2 font-bold transition ${data.fundingType === f ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}>
+                      {f === 'none' ? 'None' : f.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={`p-6 rounded-2xl border-2 transition ${data.includeTaxFreeChildcare ? 'border-teal-600 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
+                <div className="flex items-center justify-between mb-2">
+                   <h4 className="font-bold text-slate-900">Tax-Free Childcare</h4>
+                   <div className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors ${data.includeTaxFreeChildcare ? 'bg-teal-600' : 'bg-slate-300'}`} onClick={() => updateData({ includeTaxFreeChildcare: !data.includeTaxFreeChildcare })}>
+                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.includeTaxFreeChildcare ? 'translate-x-7' : 'translate-x-1'}`}></div>
+                   </div>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">Include the 20% government top-up (up to £2,000/year per child) in the final estimate.</p>
+              </div>
+            </div>
+          </div>
+        );
+      case 7:
+        const resultsPre = calculateCosts();
+        return (
+          <div className="space-y-6 text-center py-4">
+            <div className="w-20 h-20 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+              <i className="fa-solid fa-calculator"></i>
+            </div>
+            <h2 className="text-3xl font-black text-slate-900">Ready to see your estimate?</h2>
+            <p className="text-slate-500">Based on {data.hoursPerWeek} hours over {data.weeksPerYear} weeks per year.</p>
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-left space-y-2 text-sm mt-4">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Provider:</span>
+                <span className="font-bold">{data.childcareType}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Rate:</span>
+                <span className="font-bold">£{resultsPre.breakdown.rateUsed.toFixed(2)} / {data.rateType}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Funding:</span>
+                <span className="font-bold text-teal-600">{data.fundingType === 'none' ? 'None' : data.fundingType.toUpperCase()}</span>
+              </div>
             </div>
           </div>
         );
@@ -179,57 +289,82 @@ const Calculator: React.FC = () => {
   if (isSubmitted) {
     const res = calculateCosts();
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16">
+      <div className="max-w-4xl mx-auto px-4 py-16 animate-in fade-in duration-500">
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-          <div className="grid grid-cols-1 md:grid-cols-3 bg-slate-900 text-white p-1">
+          <div className="grid grid-cols-1 md:grid-cols-3 bg-slate-900 text-white">
             <div className="p-8 text-center border-b md:border-b-0 md:border-r border-slate-800">
-              <span className="text-teal-400 text-xs font-bold block mb-1">Weekly estimate</span>
-              <div className="text-3xl font-black">£{res.weekly.toFixed(2)}</div>
+              <span className="text-teal-400 text-xs font-bold block mb-1 uppercase tracking-wider">Weekly Cost</span>
+              <div className="text-4xl font-black">£{res.weekly.toFixed(2)}</div>
             </div>
             <div className="p-8 text-center border-b md:border-b-0 md:border-r border-slate-800">
-              <span className="text-teal-400 text-xs font-bold block mb-1">Monthly (avg)</span>
-              <div className="text-3xl font-black">£{res.monthly.toFixed(0)}</div>
+              <span className="text-teal-400 text-xs font-bold block mb-1 uppercase tracking-wider">Monthly Average</span>
+              <div className="text-4xl font-black">£{res.monthly.toFixed(0)}</div>
             </div>
             <div className="p-8 text-center bg-teal-600">
-              <span className="text-white text-xs font-bold block mb-1">Annual total</span>
-              <div className="text-3xl font-black">£{res.yearly.toFixed(0)}</div>
+              <span className="text-white text-xs font-bold block mb-1 uppercase tracking-wider">Annual Total</span>
+              <div className="text-4xl font-black">£{res.yearly.toFixed(0)}</div>
             </div>
           </div>
 
           <div className="p-10 md:p-14">
             <div className="flex justify-between items-center mb-10">
-              <h3 className="text-xl font-bold">Cost breakdown</h3>
-              <button onClick={() => setIsSubmitted(false)} className="text-sm font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-xl">Modify answers</button>
+              <h3 className="text-xl font-bold text-slate-900">Cost Breakdown</h3>
+              <button onClick={() => setIsSubmitted(false)} className="text-xs font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-xl hover:bg-slate-200 transition">Modify answers</button>
             </div>
             
-            <div className="space-y-4">
-              <div className="flex justify-between border-b pb-4">
-                <span className="text-slate-600">Gross childcare cost</span>
-                <span className="font-bold">£{res.breakdown.gross.toFixed(2)}</span>
+            <div className="space-y-5">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                <div className="flex flex-col">
+                   <span className="text-slate-600 font-medium">Gross Childcare Cost</span>
+                   <span className="text-[10px] text-slate-400 font-bold uppercase">Base fee for {data.hoursPerWeek} hrs</span>
+                </div>
+                <span className="font-bold text-slate-900">£{res.breakdown.base.toFixed(2)}</span>
               </div>
+
+              {res.breakdown.extras > 0 && (
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                  <span className="text-slate-600 font-medium">Extra Expenses</span>
+                  <span className="font-bold text-slate-900">+ £{res.breakdown.extras.toFixed(2)}</span>
+                </div>
+              )}
+
               {res.breakdown.funding > 0 && (
-                <div className="flex justify-between border-b pb-4 text-green-600">
-                  <span>Funded hours credit</span>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4 text-emerald-600">
+                  <div className="flex flex-col">
+                    <span className="font-medium">Funded Hours Credit ({data.fundingType.toUpperCase()})</span>
+                    <span className="text-[10px] font-bold uppercase">Pro-rated over {data.weeksPerYear} weeks</span>
+                  </div>
                   <span className="font-bold">- £{res.breakdown.funding.toFixed(2)}</span>
                 </div>
               )}
+
               {res.breakdown.tfc > 0 && (
-                <div className="flex justify-between border-b pb-4 text-teal-600">
-                  <span>Tax-free top-up</span>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-4 text-teal-600">
+                  <div className="flex flex-col">
+                    <span className="font-medium">Tax-Free Childcare Savings</span>
+                    <span className="text-[10px] font-bold uppercase">20% Government Top-up</span>
+                  </div>
                   <span className="font-bold">- £{res.breakdown.tfc.toFixed(2)}</span>
                 </div>
               )}
-              <div className="bg-teal-50 p-8 rounded-2xl flex justify-between items-center">
+
+              <div className="bg-teal-50 p-8 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-4 mt-8">
                 <div>
-                  <span className="font-bold text-teal-900 text-xl block">Total weekly outgoing</span>
-                  <span className="text-xs text-teal-600 font-semibold">Estimated contribution</span>
+                  <span className="font-black text-teal-900 text-2xl block">Your Weekly Outgoing</span>
+                  <p className="text-xs text-teal-600 font-semibold max-w-xs">Estimate based on your specific usage and selected support schemes.</p>
                 </div>
-                <span className="text-3xl md:text-4xl font-black text-teal-700">£{res.weekly.toFixed(2)}</span>
+                <div className="text-right">
+                   <span className="text-4xl md:text-5xl font-black text-teal-700">£{res.weekly.toFixed(2)}</span>
+                   <span className="block text-xs font-bold text-teal-500 mt-1">per week</span>
+                </div>
               </div>
             </div>
 
-            <div className="mt-14 text-center">
-              <button onClick={() => { setStep(1); setIsSubmitted(false); }} className="text-slate-400 font-bold text-xs">Clear and start new</button>
+            <div className="mt-14 pt-8 border-t border-slate-100 flex flex-col items-center gap-4">
+              <p className="text-xs text-slate-400 text-center max-w-lg">
+                Note: This estimate is for illustrative purposes. Actual costs may vary depending on the provider's specific terms, holiday closures, and billing cycles.
+              </p>
+              <button onClick={() => { setStep(1); setIsSubmitted(false); }} className="text-teal-600 font-bold text-sm hover:underline">Start a new calculation</button>
             </div>
           </div>
         </div>
@@ -240,20 +375,23 @@ const Calculator: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="mb-12">
-        <div className="flex justify-between items-end mb-2">
-          <span className="text-teal-600 font-bold text-xs">Step {step} of {totalSteps}</span>
-          <span className="text-slate-400 text-xs font-bold">{Math.round((step / totalSteps) * 100)}%</span>
+        <div className="flex justify-between items-end mb-3">
+          <span className="text-teal-600 font-bold text-[10px] uppercase tracking-widest">Progress</span>
+          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{Math.round((step / totalSteps) * 100)}%</span>
         </div>
-        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-          <div className="h-full bg-teal-600 transition-all duration-700" style={{ width: `${(step / totalSteps) * 100}%` }}></div>
+        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div className="h-full bg-teal-600 transition-all duration-700 ease-out" style={{ width: `${(step / totalSteps) * 100}%` }}></div>
         </div>
       </div>
-      <div className="bg-white p-10 md:p-14 rounded-3xl border border-slate-100 flex flex-col">
-        <div className="flex-grow">{renderStep()}</div>
-        <div className="mt-10 flex justify-between pt-8 border-t border-slate-100">
-          <button onClick={prevStep} disabled={step === 1} className={`font-bold ${step === 1 ? 'opacity-0' : 'text-slate-500'}`}>Back</button>
-          <button onClick={step === totalSteps ? () => setIsSubmitted(true) : nextStep} className="bg-teal-600 text-white px-10 py-4 rounded-xl font-bold shadow-lg">
-            {step === totalSteps ? 'See breakdown' : 'Continue'}
+      
+      <div className="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col min-h-[500px]">
+        <div className="flex-grow animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {renderStep()}
+        </div>
+        <div className="mt-12 flex justify-between items-center pt-8 border-t border-slate-100">
+          <button onClick={prevStep} disabled={step === 1} className={`font-bold transition-all px-6 py-3 rounded-xl ${step === 1 ? 'opacity-0' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}>Back</button>
+          <button onClick={step === totalSteps ? () => setIsSubmitted(true) : nextStep} className="bg-teal-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-teal-600/20 hover:bg-teal-700 transition-all active:scale-95">
+            {step === totalSteps ? 'See Breakdown' : 'Continue'}
           </button>
         </div>
       </div>
