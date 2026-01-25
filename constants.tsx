@@ -27,9 +27,9 @@ export const PROVIDER_TYPES = [
 
 /**
  * Data Sources:
- * 1. Coram Family and Childcare Survey 2024
+ * 1. Coram Family and Childcare Survey 2024/25
  * 2. DayNurseries.co.uk Advice & Costs Index
- * 3. DfE Education provision statistics 2024
+ * 3. Thrive Childcare Funding Policy Averages
  */
 export const CHILDCARE_DATA_2024 = {
   year: 2024,
@@ -52,10 +52,10 @@ export const CHILDCARE_DATA_2024 = {
     }
   },
   extras: {
-    meals: 6.00, // per day
-    nappies: 2.50, // per day
-    activities: 12.00, // per week
-    lateFees: 15.00 // per occurrence (treated as weekly estimate for calc)
+    meals: { price: 6.00, desc: "Fresh lunch, snacks, and dinner." },
+    nappies: { price: 2.50, desc: "Nappies, wipes, and cream." },
+    activities: { price: 12.00, desc: "External classes (French, Music, etc)." },
+    consumables: { price: 5.00, desc: "General hygiene and resource fee." }
   }
 };
 
