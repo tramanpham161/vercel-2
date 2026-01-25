@@ -73,17 +73,14 @@ const Calculator: React.FC = () => {
     if (data.fundingType !== 'none') {
       const fundedHoursLimit = data.fundingType === '15h' ? 15 : 30;
       const hoursToFund = Math.min(data.hoursPerWeek, fundedHoursLimit);
-      
-      // Effective hourly rate for calculation
       const effectiveHourly = data.rateType === 'hourly' ? rate : (rate / (data.hoursPerWeek / data.daysPerWeek));
       
-      // Pro-rating: (Max Hours * Rate * 38 weeks) / weeks_per_year_usage
+      // Thrive/UK Standard: 1140 total hours / weeks_used
+      // (Hours * Rate * 38 weeks) / weeks_per_year_usage
       weeklyFundingCredit = (hoursToFund * effectiveHourly * 38) / data.weeksPerYear;
     }
 
     const weeklyNetPreTFC = Math.max(0, baseWeekly - weeklyFundingCredit) + weeklyExtras;
-    
-    // 4. Tax-Free Childcare (TFC) Savings
     const tfcWeeklyLimit = 2000 / 52;
     const tfcSaving = data.includeTaxFreeChildcare ? Math.min(weeklyNetPreTFC * 0.20, tfcWeeklyLimit) : 0;
 
@@ -111,7 +108,7 @@ const Calculator: React.FC = () => {
       case 1:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Your usage</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Your Usage</h2>
             <div className="space-y-8">
               <div>
                 <label className="text-sm font-bold text-slate-500 mb-2 block">Hours per week</label>
@@ -134,12 +131,14 @@ const Calculator: React.FC = () => {
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Care period</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Care Period</h2>
             <div className="grid grid-cols-1 gap-3">
               {[38, 48, 51].map((w) => (
                 <button key={w} onClick={() => updateData({ weeksPerYear: w })} className={`p-5 text-left border-2 rounded-2xl transition ${data.weeksPerYear === w ? 'border-teal-600 bg-teal-50' : 'border-slate-200 hover:border-slate-300'}`}>
                   <span className="block font-bold text-lg">{w} weeks</span>
-                  <span className="text-xs text-slate-400">{w === 38 ? 'Term-time (Funding fully covers these weeks)' : 'Year-round (Funding is "stretched" across the year)'}</span>
+                  <span className="text-xs text-slate-400 leading-tight">
+                    {w === 38 ? 'Term-time only' : 'Year-round care (funding is "stretched" across the year)'}
+                  </span>
                 </button>
               ))}
             </div>
@@ -167,7 +166,7 @@ const Calculator: React.FC = () => {
         const avg = getAverageRate();
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Standard fee</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Standard Fees</h2>
             <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
               <button onClick={() => updateData({ rateType: 'hourly' })} className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${data.rateType === 'hourly' ? 'bg-white shadow text-teal-600' : 'text-slate-500'}`}>Hourly Rate</button>
               <button onClick={() => updateData({ rateType: 'daily' })} className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${data.rateType === 'daily' ? 'bg-white shadow text-teal-600' : 'text-slate-500'}`}>Daily Rate</button>
@@ -175,9 +174,9 @@ const Calculator: React.FC = () => {
             
             {!data.useCustomRate ? (
               <div className="p-8 bg-teal-50 rounded-3xl border border-teal-100 text-center">
-                <span className="text-xs font-bold text-teal-600 block mb-1">Average in {isLondon(data.postcode) ? 'London' : 'your region'}</span>
+                <span className="text-xs font-bold text-teal-600 block mb-1">Average for {isLondon(data.postcode) ? 'London' : 'your region'}</span>
                 <span className="text-4xl font-black text-teal-900">£{avg.toFixed(2)}<span className="text-lg font-medium">/{data.rateType === 'hourly' ? 'hr' : 'day'}</span></span>
-                <button onClick={() => updateData({ useCustomRate: true, customRateValue: avg })} className="block w-full mt-6 py-3 bg-white border border-teal-200 rounded-xl text-sm font-bold text-teal-700 hover:bg-teal-100 transition">Enter my specific rate</button>
+                <button onClick={() => updateData({ useCustomRate: true, customRateValue: avg })} className="block w-full mt-6 py-3 bg-white border border-teal-200 rounded-xl text-sm font-bold text-teal-700 hover:bg-teal-100 transition">Enter specific rate</button>
               </div>
             ) : (
               <div className="space-y-4">
@@ -186,7 +185,7 @@ const Calculator: React.FC = () => {
                   <input type="number" step="0.01" value={data.customRateValue || ''} onChange={(e) => updateData({ customRateValue: parseFloat(e.target.value) })} className="w-full p-4 pl-8 border-2 border-teal-600 rounded-xl text-xl font-bold text-teal-900 outline-none" placeholder="0.00" />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">per {data.rateType === 'hourly' ? 'hour' : 'day'}</span>
                 </div>
-                <button onClick={() => updateData({ useCustomRate: false })} className="text-slate-400 text-xs font-bold hover:text-teal-600">Use regional average</button>
+                <button onClick={() => updateData({ useCustomRate: false })} className="text-slate-400 text-xs font-bold hover:text-teal-600">Switch to averages</button>
               </div>
             )}
           </div>
@@ -194,8 +193,8 @@ const Calculator: React.FC = () => {
       case 5:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Extra costs</h2>
-            <p className="text-slate-500 text-sm">Most providers charge for meals and consumables when using funded hours.</p>
+            <h2 className="text-2xl font-bold text-slate-900">Extra Expenses</h2>
+            <p className="text-slate-500 text-sm">Government funding does not cover subsistence (meals) or consumables. Enter your known costs or use regional averages.</p>
             <div className="space-y-3">
               {data.extraCosts.map((item, idx) => (
                 <div key={item.name} className={`p-4 rounded-2xl border-2 transition ${item.enabled ? 'border-teal-600 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
@@ -231,13 +230,13 @@ const Calculator: React.FC = () => {
       case 6:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Financial Support</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Government Support</h2>
             <div className="space-y-6">
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Funded Hours entitlement</label>
                 <div className="grid grid-cols-3 gap-2">
                   {['none', '15h', '30h'].map((f) => (
-                    <button key={f} onClick={() => updateData({ fundingType: f as FundingType })} className={`p-4 rounded-xl border-2 font-bold transition ${data.fundingType === f ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-white border-slate-200 text-slate-400'}`}>
+                    <button key={f} onClick={() => updateData({ fundingType: f as FundingType })} className={`p-4 rounded-xl border-2 font-bold transition ${data.fundingType === f ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}>
                       {f === 'none' ? 'None' : f.toUpperCase()}
                     </button>
                   ))}
@@ -247,13 +246,13 @@ const Calculator: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                    <h4 className="font-bold text-slate-900 flex items-center gap-2">
                      <i className="fa-solid fa-piggy-bank text-teal-600"></i>
-                     Tax-Free Childcare
+                     Tax-Free Childcare (TFC)
                    </h4>
                    <div className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors ${data.includeTaxFreeChildcare ? 'bg-teal-600' : 'bg-slate-300'}`} onClick={() => updateData({ includeTaxFreeChildcare: !data.includeTaxFreeChildcare })}>
                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.includeTaxFreeChildcare ? 'translate-x-7' : 'translate-x-1'}`}></div>
                    </div>
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">The government adds £2 for every £8 you pay, up to £2,000/year. Select this to see your net out-of-pocket cost.</p>
+                <p className="text-xs text-slate-500 leading-relaxed">Include the 20% government top-up in the final estimate. This is applied to your net bill after funded hours credit.</p>
               </div>
             </div>
           </div>
@@ -262,10 +261,10 @@ const Calculator: React.FC = () => {
         return (
           <div className="space-y-6 text-center py-8">
             <div className="w-24 h-24 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
-              <i className="fa-solid fa-chart-line"></i>
+              <i className="fa-solid fa-calculator"></i>
             </div>
-            <h2 className="text-3xl font-black text-slate-900">Calculate my estimate</h2>
-            <p className="text-slate-500 max-w-sm mx-auto">We'll pro-rate your funding and extras across your {data.weeksPerYear}-week care cycle.</p>
+            <h2 className="text-3xl font-black text-slate-900">Generate Quote</h2>
+            <p className="text-slate-500 max-w-sm mx-auto">We'll pro-rate your entitlements and extra costs across your {data.weeksPerYear}-week cycle.</p>
           </div>
         );
       default: return null;
@@ -294,20 +293,20 @@ const Calculator: React.FC = () => {
 
           <div className="p-10 md:p-14">
             <div className="flex justify-between items-center mb-10">
-              <h3 className="text-2xl font-bold text-slate-900">Breakdown & Policy Notes</h3>
-              <button onClick={() => setIsSubmitted(false)} className="text-xs font-bold text-slate-500 bg-slate-100 px-5 py-2.5 rounded-xl hover:bg-slate-200 transition">Adjust my answers</button>
+              <h3 className="text-2xl font-bold text-slate-900">Understanding your quote</h3>
+              <button onClick={() => setIsSubmitted(false)} className="text-xs font-bold text-slate-500 bg-slate-100 px-5 py-2.5 rounded-xl hover:bg-slate-200 transition">Modify my answers</button>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="space-y-6">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                  <span className="text-slate-600 font-medium">Gross Childcare Fee</span>
+                  <span className="text-slate-600 font-medium">Standard Provider Fee</span>
                   <span className="font-bold text-slate-900">£{res.breakdown.base.toFixed(2)}</span>
                 </div>
 
                 {res.breakdown.extras > 0 && (
                   <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                    <span className="text-slate-600 font-medium">Extra Expenses (Meals/Consumables)</span>
+                    <span className="text-slate-600 font-medium">Meals & Consumables</span>
                     <span className="font-bold text-slate-900">+ £{res.breakdown.extras.toFixed(2)}</span>
                   </div>
                 )}
@@ -321,43 +320,50 @@ const Calculator: React.FC = () => {
 
                 {res.breakdown.tfc > 0 && (
                   <div className="flex justify-between items-center border-b border-slate-100 pb-4 text-teal-600">
-                    <span className="font-medium">Tax-Free Childcare top-up</span>
+                    <span className="font-medium">Tax-Free Childcare Savings</span>
                     <span className="font-bold">- £{res.breakdown.tfc.toFixed(2)}</span>
                   </div>
                 )}
 
-                <div className="bg-teal-50 p-8 rounded-[2rem] flex flex-col items-center text-center gap-2 mt-8">
-                   <span className="text-xs font-bold text-teal-600 uppercase tracking-widest">Estimated Weekly Outgoing</span>
+                <div className="bg-teal-50 p-8 rounded-[2rem] flex flex-col items-center text-center gap-2 mt-8 border border-teal-100">
+                   <span className="text-xs font-bold text-teal-600 uppercase tracking-widest">Total Weekly Outgoing</span>
                    <span className="text-5xl font-black text-teal-900">£{res.weekly.toFixed(2)}</span>
-                   <p className="text-[10px] text-teal-600/70 mt-2 italic">*Based on {data.weeksPerYear} weeks per year</p>
+                   <p className="text-[10px] text-teal-600/70 mt-2 italic">Averaged across {data.weeksPerYear} weeks per year</p>
                 </div>
               </div>
 
               <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200">
                 <h4 className="font-bold text-slate-900 mb-6 flex items-center gap-2">
-                   <i className="fa-solid fa-circle-question text-teal-600"></i>
-                   How we calculated this
+                   <i className="fa-solid fa-circle-info text-teal-600"></i>
+                   Policy & Support Notes
                 </h4>
                 <div className="space-y-6 text-sm">
                   <div className="space-y-1">
-                    <p className="font-bold text-slate-800">"Stretched" Funding</p>
+                    <p className="font-bold text-slate-800">"Stretched" vs "Term-Time" Funding</p>
                     <p className="text-slate-500 leading-relaxed">
-                      Funding is usually 1,140 hours over 38 weeks. Since you care for <strong>{data.weeksPerYear} weeks</strong>, your funding is pro-rated to roughly <strong>{(res.breakdown.fundedHoursCount * 38 / data.weeksPerYear).toFixed(1)} hours per week</strong> across the whole year.
+                      Official funding is 1,140 hours over 38 weeks. Since you selected <strong>{data.weeksPerYear} weeks</strong>, the credit is "stretched." This provides roughly <strong>{(res.breakdown.fundedHoursCount * 38 / data.weeksPerYear).toFixed(1)} hours</strong> of credit every single week of the year.
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="font-bold text-slate-800">Consumables & Meals</p>
+                    <p className="font-bold text-slate-800">Why the Consumable Charge?</p>
                     <p className="text-slate-500 leading-relaxed">
-                      Government funding only covers education, not subsistence. Providers charge daily fees for lunches and resources which are added back to your bill.
+                      As per Thrive and GOV.UK policy, government funding only covers delivery of education. Providers are permitted to charge for meals, nappies, and extra-curriculars during funded hours.
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="font-bold text-slate-800">Tax-Free Childcare Cap</p>
+                    <p className="font-bold text-slate-800">Tax-Free Childcare Limit</p>
                     <p className="text-slate-500 leading-relaxed">
-                      The maximum top-up is £2,000 per year (£38.46 per week). If your 20% savings exceeded this, we have capped it at the legal limit.
+                      The TFC support is capped at £2,000/year per child. If your 20% calculation exceeded £38.46/week, we have automatically applied the legal cap.
                     </p>
                   </div>
                 </div>
+              </div>
+            </div>
+            
+            <div className="mt-12 p-6 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-4">
+              <i className="fa-solid fa-triangle-exclamation text-amber-600 mt-1"></i>
+              <div className="text-xs text-amber-900 leading-relaxed">
+                <strong>Disclaimer:</strong> This is an estimate for illustrative purposes. Provider rates fluctuate and specific eligibility codes must be refreshed every 3 months. Always confirm final fees with your chosen nursery.
               </div>
             </div>
           </div>
