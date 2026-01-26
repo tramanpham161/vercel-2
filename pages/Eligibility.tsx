@@ -37,10 +37,14 @@ const Eligibility: React.FC = () => {
     else return { term: "1 January", window: `15 Oct to 31 Dec`, deadline: `31 Dec`, id: 'jan' };
   };
 
+  /**
+   * Links updated to match the official GOV.UK "How to find an approved childcare provider" section.
+   * Source: https://www.gov.uk/help-with-childcare-costs/approved-childcare
+   */
   const providerLinks: Record<UKRegion, string> = {
     'England': 'https://www.gov.uk/find-local-council-childcare',
-    'Scotland': 'https://www.careinspectorate.com/index.php/care-services',
-    'Wales': 'https://www.gov.wales/find-childcare',
+    'Scotland': 'http://www.careinspectorate.com/',
+    'Wales': 'https://careinspectorate.wales/',
     'Northern Ireland': 'https://www.familysupportni.gov.uk/'
   };
 
@@ -435,11 +439,11 @@ const Eligibility: React.FC = () => {
                   Find an Approved Provider
                 </h4>
                 <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                  Now that you know your likely entitlements, you should find a childcare provider that accepts funded hours in your area. Use the official government directory for <strong>{data.location}</strong>:
+                  Now that you know your likely entitlements, you should find a childcare provider that is officially approved in <strong>{data.location}</strong>. Use the official directory for your region:
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <a href={providerLinks[data.location]} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 px-8 py-4 rounded-2xl font-bold hover:border-teal-600 hover:text-teal-600 transition shadow-sm group">
-                    Search Regional Directory <i className="fa-solid fa-external-link text-[10px] group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+                    Find Approved Providers <i className="fa-solid fa-external-link text-[10px] group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
                   </a>
                   {data.location === 'England' && (
                     <a href="https://reports.ofsted.gov.uk/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 px-8 py-4 rounded-2xl font-bold hover:border-teal-600 hover:text-teal-600 transition shadow-sm">
