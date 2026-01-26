@@ -1,13 +1,19 @@
 
 export type ChildAge = 'under9m' | '9m-2y' | '2y' | '3-4y' | '5plus';
 
-export type WorkStatus = 'both' | 'one' | 'none' | 'notSure';
+export type WorkStatus = 'working' | 'on-leave' | 'not-working' | 'unable-to-work';
+
+export type UKRegion = 'England' | 'Scotland' | 'Wales' | 'Northern Ireland';
 
 export interface EligibilityData {
+  location: UKRegion;
   childAge: ChildAge;
-  workStatus: WorkStatus;
-  incomeInRange: 'yes' | 'no' | 'notSure';
+  hasPartner: boolean;
+  userWorkStatus: WorkStatus;
+  partnerWorkStatus?: WorkStatus;
+  incomeInRange: 'yes' | 'no' | 'notSure'; // Net income < £100k and > Min Wage
   benefits: string[];
+  childDisabled: boolean;
   postcode: string;
   hoursPerWeek: number;
   providerType: string;
@@ -43,4 +49,5 @@ export interface Scheme {
   title: string;
   description: string;
   hours: number;
+  type: 'funding' | 'financial-support';
 }
