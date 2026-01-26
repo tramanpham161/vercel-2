@@ -52,17 +52,17 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
             <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
               <div className="text-teal-600 text-5xl font-black mb-2 leading-none">30</div>
-              <div className="text-slate-900 font-bold text-lg mb-2">Weekly Free Hours</div>
+              <div className="text-slate-900 font-bold text-lg mb-2">Weekly free hours</div>
               <p className="text-slate-500 text-sm leading-relaxed">Now available to working parents of all children from 9 months to school age.</p>
             </div>
             <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
               <div className="text-teal-600 text-5xl font-black mb-2 leading-none">£2k</div>
-              <div className="text-slate-900 font-bold text-lg mb-2">Tax-Free Savings</div>
+              <div className="text-slate-900 font-bold text-lg mb-2">Tax-free savings</div>
               <p className="text-slate-500 text-sm leading-relaxed">Maximum government top-up per child per year to help pay your bills.</p>
             </div>
             <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
               <div className="text-teal-600 text-5xl font-black mb-2 leading-none">85%</div>
-              <div className="text-slate-900 font-bold text-lg mb-2">Cost Recovery</div>
+              <div className="text-slate-900 font-bold text-lg mb-2">Cost recovery</div>
               <p className="text-slate-500 text-sm leading-relaxed">Maximum amount working parents can claim back through Universal Credit.</p>
             </div>
           </div>
@@ -82,9 +82,9 @@ const Home: React.FC = () => {
               <h2 className="text-3xl md:text-5xl font-black mb-8 text-slate-900 leading-tight">Empowering families with clear cost estimates.</h2>
               <div className="space-y-8">
                 {[
-                  { title: 'Full 30-Hour Expansion', text: 'The government rollout is now complete. Working parents of toddlers and infants (9m+) can access full 30-hour support.' },
-                  { title: 'Tax-Free Childcare Integration', text: 'We calculate your net out-of-pocket costs after both funded hours and the 20% Tax-Free top-up.' },
-                  { title: 'Flexible Care Pro-Rating', text: 'Calculations adjusted for "stretched" funding if your child attends nursery year-round (51 weeks).' },
+                  { title: 'Full 30-hour expansion', text: 'The government rollout is now complete. Working parents of toddlers and infants (9m+) can access full 30-hour support.' },
+                  { title: 'Tax-free childcare integration', text: 'We calculate your net out-of-pocket costs after both funded hours and the 20% Tax-Free top-up.' },
+                  { title: 'Flexible care pro-rating', text: 'Calculations adjusted for "stretched" funding if your child attends nursery year-round (51 weeks).' },
                 ].map((benefit, i) => (
                   <div key={i} className="flex gap-5">
                     <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center flex-shrink-0 text-teal-600">
