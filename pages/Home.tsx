@@ -56,7 +56,7 @@ const Home: React.FC = () => {
               <p className="text-slate-500 text-sm leading-relaxed">Now available to working parents of all children from 9 months to school age.</p>
             </div>
             <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
-              <div className="text-teal-600 text-5xl font-black mb-2 leading-none">£2k</div>
+              <div className="text-teal-600 text-5xl font-black mb-2 leading-none">£2,000</div>
               <div className="text-slate-900 font-bold text-lg mb-2">Tax-Free Savings</div>
               <p className="text-slate-500 text-sm leading-relaxed">Maximum government top-up per child per year to help pay your bills.</p>
             </div>
