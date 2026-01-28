@@ -52,10 +52,10 @@ const Eligibility: React.FC = () => {
   };
 
   const providerLinks: Record<UKRegion, string> = {
-    'England': 'https://www.gov.uk/find-local-council-childcare',
-    'Scotland': 'https://www.parentclub.scot/articles/funded-early-learning-and-childcare',
-    'Wales': 'https://careinspectorate.wales/find-a-care-service',
-    'Northern Ireland': 'https://www.familysupportni.gov.uk/ServiceSearch/1/Childcare'
+    'England': 'https://www.gov.uk/government/publications/childminder-agencies-list-of-agencies',
+    'Scotland': 'http://www.careinspectorate.com/',
+    'Wales': 'https://digital.careinspectorate.wales/directory/search',
+    'Northern Ireland': 'https://www.nidirect.gov.uk/articles/early-years-teams'
   };
 
   const results = useMemo(() => {
