@@ -40,7 +40,7 @@ export const OFFICIAL_LINKS = {
   schemes: {
     eng15hUniversal: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-and-education-for-2-to-4-year-olds',
     eng30hWorking: 'https://www.gov.uk/apply-30-hours-free-childcare',
-    engExpansion: 'https://www.gov.uk/check-eligible-working-parent-childcare',
+    engExpansion: 'https://www.gov.uk/free-childcare-if-working/apply-for-free-childcare-if-youre-working',
     eng2hSupport: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-2-year-olds',
     scotland1140: 'https://www.parentclub.scot/articles/funded-early-learning-and-childcare',
     walesOffer: 'https://www.gov.wales/get-childcare-offer-wales-parents',
