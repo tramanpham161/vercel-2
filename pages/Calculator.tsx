@@ -73,6 +73,7 @@ const Calculator: React.FC = () => {
       const fundedHoursLimit = data.fundingType === '15h' ? 15 : 30;
       const hoursToFund = Math.min(data.hoursPerWeek, fundedHoursLimit);
       const effectiveHourly = data.rateType === 'hourly' ? rate : (rate / (data.hoursPerWeek / data.daysPerWeek));
+      // Pro-rate funded hours over the weeks per year if not term-time (38 weeks)
       weeklyFundingCredit = (hoursToFund * effectiveHourly * 38) / data.weeksPerYear;
     }
 
@@ -157,7 +158,7 @@ const Calculator: React.FC = () => {
         const avg = getAverageRate();
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Provider Fees</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Fees</h2>
             <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
               <button onClick={() => updateData({ rateType: 'hourly' })} className={`flex-1 py-2 rounded-lg font-bold text-sm ${data.rateType === 'hourly' ? 'bg-white shadow text-teal-600' : 'text-slate-500'}`}>Hourly</button>
               <button onClick={() => updateData({ rateType: 'daily' })} className={`flex-1 py-2 rounded-lg font-bold text-sm ${data.rateType === 'daily' ? 'bg-white shadow text-teal-600' : 'text-slate-500'}`}>Daily</button>
@@ -165,7 +166,7 @@ const Calculator: React.FC = () => {
             {!data.useCustomRate ? (
               <div className="p-8 bg-teal-50 rounded-3xl border border-teal-100 text-center">
                 <span className="text-4xl font-black text-teal-900">£{avg.toFixed(2)}</span>
-                <button onClick={() => updateData({ useCustomRate: true, customRateValue: avg })} className="block w-full mt-6 py-3 bg-white border border-teal-200 rounded-xl text-sm font-bold text-teal-700">Enter custom rate</button>
+                <button onClick={() => updateData({ useCustomRate: true, customRateValue: avg })} className="block w-full mt-6 py-3 bg-white border border-teal-200 rounded-xl text-sm font-bold text-teal-700 transition hover:bg-teal-50">Enter custom rate</button>
               </div>
             ) : (
               <div className="relative">
@@ -178,7 +179,7 @@ const Calculator: React.FC = () => {
       case 5:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Expenses</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Extras</h2>
             <div className="space-y-3">
               {data.extraCosts.map((item, idx) => (
                 <div key={item.name} className={`p-4 rounded-2xl border-2 transition ${item.enabled ? 'border-teal-600 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
@@ -187,8 +188,11 @@ const Calculator: React.FC = () => {
                       const newCosts = [...data.extraCosts];
                       newCosts[idx].enabled = e.target.checked;
                       setData({...data, extraCosts: newCosts});
-                    }} className="w-5 h-5 accent-teal-600" />
-                    <span className="font-bold text-slate-800">{item.name}</span>
+                    }} className="w-5 h-5 accent-teal-600 rounded" />
+                    <div>
+                      <span className="font-bold text-slate-800 block">{item.name}</span>
+                      <span className="text-[10px] text-slate-400">{item.description}</span>
+                    </div>
                   </label>
                 </div>
               ))}
@@ -198,19 +202,22 @@ const Calculator: React.FC = () => {
       case 6:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Support</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Funding Applied</h2>
             <div className="space-y-6">
               <div className="grid grid-cols-3 gap-2">
                 {['none', '15h', '30h'].map((f) => (
-                  <button key={f} onClick={() => updateData({ fundingType: f as FundingType })} className={`p-4 rounded-xl border-2 font-bold ${data.fundingType === f ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-400'}`}>
+                  <button key={f} onClick={() => updateData({ fundingType: f as FundingType })} className={`p-4 rounded-xl border-2 font-bold transition ${data.fundingType === f ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-400 hover:border-slate-300'}`}>
                     {f.toUpperCase()}
                   </button>
                 ))}
               </div>
-              <div className={`p-6 rounded-2xl border-2 ${data.includeTaxFreeChildcare ? 'border-teal-600 bg-teal-50' : 'bg-slate-50'}`}>
-                 <button onClick={() => updateData({ includeTaxFreeChildcare: !data.includeTaxFreeChildcare })} className="w-full flex justify-between items-center">
-                    <span className="font-bold text-slate-900">Tax-Free Childcare</span>
-                    <i className={`fa-solid fa-toggle-${data.includeTaxFreeChildcare ? 'on text-teal-600' : 'off text-slate-300'} text-2xl`}></i>
+              <div className={`p-6 rounded-2xl border-2 transition ${data.includeTaxFreeChildcare ? 'border-teal-600 bg-teal-50' : 'bg-slate-50'}`}>
+                 <button onClick={() => updateData({ includeTaxFreeChildcare: !data.includeTaxFreeChildcare })} className="w-full flex justify-between items-center text-left">
+                    <div>
+                      <span className="font-bold text-slate-900 text-sm block">Tax-Free Childcare</span>
+                      <span className="text-xs text-slate-400">Apply 20% savings on net costs?</span>
+                    </div>
+                    <i className={`fa-solid fa-toggle-${data.includeTaxFreeChildcare ? 'on text-teal-600' : 'off text-slate-300'} text-3xl`}></i>
                  </button>
               </div>
             </div>
@@ -220,7 +227,7 @@ const Calculator: React.FC = () => {
         return (
           <div className="text-center py-12">
             <i className="fa-solid fa-chart-line text-6xl text-teal-600 mb-6"></i>
-            <h2 className="text-3xl font-black text-slate-900">Analyze Costs</h2>
+            <h2 className="text-3xl font-black text-slate-900">Calculating your quote...</h2>
           </div>
         );
       default: return null;
@@ -234,62 +241,78 @@ const Calculator: React.FC = () => {
         <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100">
           <div className="grid grid-cols-1 md:grid-cols-3 bg-slate-900 text-white">
             <div className="p-10 text-center border-r border-slate-800">
-              <span className="text-xs text-slate-400 block mb-1">Monthly</span>
+              <span className="text-xs text-slate-400 block mb-1 uppercase font-bold tracking-widest">Monthly</span>
               <div className="text-4xl font-black">£{res.monthly.toFixed(0)}</div>
             </div>
             <div className="p-10 text-center border-r border-slate-800">
-              <span className="text-xs text-slate-400 block mb-1">Weekly</span>
+              <span className="text-xs text-slate-400 block mb-1 uppercase font-bold tracking-widest">Weekly</span>
               <div className="text-4xl font-black">£{res.weekly.toFixed(2)}</div>
             </div>
             <div className="p-10 text-center bg-teal-600">
-              <span className="text-xs text-teal-100 block mb-1">Yearly</span>
+              <span className="text-xs text-teal-100 block mb-1 uppercase font-bold tracking-widest">Yearly</span>
               <div className="text-4xl font-black">£{res.yearly.toFixed(0)}</div>
             </div>
           </div>
 
           <div className="p-10 md:p-14">
              {/* Disclaimer */}
-             <div className="mb-12 p-6 bg-amber-50 rounded-3xl border border-amber-100 flex items-start gap-4 text-xs">
+             <div className="mb-12 p-6 bg-amber-50 rounded-3xl border border-amber-100 flex items-start gap-4">
                <i className="fa-solid fa-circle-info text-amber-600 mt-1"></i>
-               <div className="text-amber-900 leading-relaxed">
-                 <strong>Cross-check Required:</strong> This estimate is based on the data provided. Rates and rules can vary by provider and region. Please verify with your chosen setting and official government tools.
+               <div className="text-xs text-amber-900 leading-relaxed font-medium">
+                 <strong>Cross-check Required:</strong> This quote is an estimate based on average regional rates and provided inputs. Individual provider fees and local authority pro-rating policies vary. Please verify this quote with your chosen setting before signing a contract.
                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="space-y-6">
-                <div className="flex justify-between border-b pb-4">
-                  <span className="text-slate-600">Base Cost</span>
+                <div className="flex justify-between border-b pb-4 text-sm">
+                  <span className="text-slate-600">Base Cost ({data.hoursPerWeek}h/wk)</span>
                   <span className="font-bold">£{res.breakdown.base.toFixed(2)}</span>
                 </div>
                 {res.breakdown.funding > 0 && (
-                  <div className="flex justify-between border-b pb-4 text-emerald-600">
-                    <span>Funding Credit</span>
+                  <div className="flex justify-between border-b pb-4 text-emerald-600 text-sm">
+                    <span>Funding Credit (38wks pro-rated)</span>
                     <span className="font-bold">- £{res.breakdown.funding.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="bg-teal-50 p-8 rounded-[2rem] text-center border border-teal-100">
-                   <span className="text-xs font-bold text-teal-600 uppercase">Weekly Net</span>
-                   <div className="text-5xl font-black text-teal-900">£{res.weekly.toFixed(2)}</div>
+                {res.breakdown.extras > 0 && (
+                  <div className="flex justify-between border-b pb-4 text-sm">
+                    <span>Selected Extras</span>
+                    <span className="font-bold">+ £{res.breakdown.extras.toFixed(2)}</span>
+                  </div>
+                )}
+                {data.includeTaxFreeChildcare && (
+                  <div className="flex justify-between border-b pb-4 text-teal-600 text-sm font-medium">
+                    <span>Tax-Free Childcare Savings</span>
+                    <span className="font-bold">- £{res.breakdown.tfc.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="bg-teal-50 p-8 rounded-[2.5rem] text-center border border-teal-100 mt-4">
+                   <span className="text-xs font-black text-teal-600 uppercase tracking-widest block mb-1">Weekly Net Payable</span>
+                   <div className="text-6xl font-black text-teal-900">£{res.weekly.toFixed(2)}</div>
                 </div>
               </div>
 
               {/* Email Form */}
-              <div className="bg-slate-900 rounded-[2rem] p-8 text-white">
-                 <h4 className="font-bold text-xl mb-4">Email me this quote</h4>
+              <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white flex flex-col justify-center">
+                 <h4 className="font-bold text-xl mb-2">Email me this quote</h4>
+                 <p className="text-xs text-slate-400 mb-6 leading-relaxed">Keep a copy of this cost breakdown for your records. We'll send it as a PDF-ready summary.</p>
                  {emailSent ? (
-                   <p className="text-teal-400 font-bold">Quote sent to your inbox!</p>
+                   <div className="text-teal-400 font-bold p-4 bg-teal-400/10 rounded-xl text-center border border-teal-400/20 animate-in fade-in slide-in-from-top-2">
+                     <i className="fa-solid fa-paper-plane mb-2 block"></i>
+                     Quote sent! Check your inbox.
+                   </div>
                  ) : (
-                   <form onSubmit={handleEmailSubmit} className="space-y-4">
-                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full p-4 rounded-xl text-slate-900 outline-none" required />
-                     <button type="submit" className="w-full bg-teal-600 py-4 rounded-xl font-bold hover:bg-teal-500 transition">Email Quote</button>
+                   <form onSubmit={handleEmailSubmit} className="space-y-3">
+                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full p-4 rounded-xl text-slate-900 outline-none focus:ring-2 focus:ring-teal-500" required />
+                     <button type="submit" className="w-full bg-teal-600 py-4 rounded-xl font-bold hover:bg-teal-500 transition shadow-lg shadow-teal-600/20 active:scale-95">Send Quote</button>
                    </form>
                  )}
               </div>
             </div>
 
             <div className="mt-12 text-center">
-              <button onClick={() => setIsSubmitted(false)} className="text-sm font-bold text-slate-400 hover:text-teal-600">Adjust my calculation</button>
+              <button onClick={() => setIsSubmitted(false)} className="text-sm font-bold text-slate-400 hover:text-teal-600 transition">Adjust calculation</button>
             </div>
           </div>
         </div>
@@ -301,22 +324,22 @@ const Calculator: React.FC = () => {
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="mb-12">
         <div className="flex justify-between mb-4">
-          <span className="text-teal-600 font-bold text-xs uppercase tracking-widest">Calculator</span>
-          <span className="text-slate-400 text-xs font-bold">{Math.round((step / totalSteps) * 100)}%</span>
+          <span className="text-teal-600 font-bold text-xs uppercase tracking-widest">Cost Estimator</span>
+          <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">{Math.round((step / totalSteps) * 100)}% Complete</span>
         </div>
         <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
           <div className="h-full bg-teal-600 transition-all duration-700" style={{ width: `${(step / totalSteps) * 100}%` }}></div>
         </div>
       </div>
       
-      <div className="bg-white p-10 md:p-14 rounded-[3rem] shadow-sm border border-slate-100 flex flex-col min-h-[500px]">
+      <div className="bg-white p-10 md:p-14 rounded-[3rem] shadow-sm border border-slate-100 flex flex-col min-h-[500px] transition-all">
         <div className="flex-grow">
           {renderStep()}
         </div>
         <div className="mt-12 flex justify-between items-center pt-8 border-t border-slate-100">
-          <button onClick={prevStep} disabled={step === 1} className={`font-bold transition-all px-6 py-3 rounded-xl ${step === 1 ? 'opacity-0' : 'text-slate-400'}`}>Back</button>
-          <button onClick={step === totalSteps ? () => setIsSubmitted(true) : nextStep} className="bg-teal-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl">
-            {step === totalSteps ? 'Calculate Costs' : 'Next'}
+          <button onClick={prevStep} disabled={step === 1} className={`font-bold transition-all px-6 py-3 rounded-xl ${step === 1 ? 'opacity-0' : 'text-slate-400 hover:text-slate-600'}`}>Back</button>
+          <button onClick={step === totalSteps ? () => setIsSubmitted(true) : nextStep} className="bg-teal-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-teal-600/20 hover:bg-teal-700 transition-all active:scale-95">
+            {step === totalSteps ? 'Calculate Costs' : 'Continue'}
           </button>
         </div>
       </div>
