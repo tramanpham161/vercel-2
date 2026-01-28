@@ -132,7 +132,8 @@ const Eligibility: React.FC = () => {
           description: 'You will qualify for 30 hours once your child reaches 9 months of age.',
           reason: 'Your income meets the criteria, but the funding for this age group starts only once the child is 9 months old.',
           hours: 0,
-          type: 'funding'
+          type: 'funding',
+          link: 'https://www.gov.uk/check-eligible-working-parent-childcare'
         });
       }
     }
@@ -146,7 +147,8 @@ const Eligibility: React.FC = () => {
         description: 'Scotland provides a universal 1,140 hours a year (approx 30h/week).',
         reason: 'All 3 and 4-year-olds in Scotland qualify automatically. Eligible 2-year-olds qualify based on family support criteria.',
         hours: 30,
-        type: 'funding'
+        type: 'funding',
+        link: 'https://www.parentclub.scot/articles/funded-early-learning-and-childcare'
       });
     }
 
@@ -389,8 +391,8 @@ const Eligibility: React.FC = () => {
                       {catSchemes.map((scheme) => (
                         <div key={scheme.id} className="p-8 rounded-[2rem] border border-slate-100 bg-white flex flex-col hover:shadow-xl transition-all duration-300 relative overflow-hidden">
                           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 -mr-16 -mt-16 rounded-full opacity-50"></div>
-                          <div className="relative">
-                            <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider mb-2 ${
+                          <div className="relative flex flex-col h-full">
+                            <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider mb-2 w-fit ${
                               scheme.category === 'Universal' ? 'bg-blue-100 text-blue-700' : 
                               scheme.category === 'Working Families' ? 'bg-teal-100 text-teal-700' : 
                               scheme.category === 'Support-Based' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-700'
@@ -400,15 +402,27 @@ const Eligibility: React.FC = () => {
                             <h4 className="font-bold text-xl text-slate-900 mb-3">{scheme.title}</h4>
                             <p className="text-sm text-slate-500 leading-relaxed mb-6">{scheme.description}</p>
                             
-                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-6">
+                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-6 flex-grow">
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Why you qualify</span>
                               <p className="text-xs text-slate-700 font-medium leading-relaxed italic">"{scheme.reason}"</p>
                             </div>
 
                             {scheme.link && (
-                              <a href={scheme.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-teal-600 font-bold text-xs hover:gap-3 transition-all">
-                                Go to Official Gov.uk Portal <i className="fa-solid fa-arrow-right"></i>
-                              </a>
+                              <div className="mt-auto">
+                                <a 
+                                  href={scheme.link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className={`inline-flex items-center justify-center gap-3 w-full py-4 rounded-xl font-bold text-sm transition-all shadow-lg ${
+                                    scheme.category === 'Universal' 
+                                    ? 'bg-slate-900 text-white hover:bg-slate-800' 
+                                    : 'bg-teal-600 text-white hover:bg-teal-700 shadow-teal-600/20'
+                                  }`}
+                                >
+                                  Apply Now <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                                </a>
+                                <p className="text-[10px] text-slate-400 mt-3 text-center">Redirects to official {scheme.id.startsWith('eng') ? 'Gov.uk' : 'regional'} portal</p>
+                              </div>
                             )}
                           </div>
                         </div>
