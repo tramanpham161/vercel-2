@@ -102,7 +102,7 @@ const Eligibility: React.FC = () => {
           reason: `As a working family earning ${MIN_EARNINGS_TEXT}, your child qualifies for the full 30 hours.`,
           hours: 30,
           type: 'funding',
-          link: 'https://www.gov.uk/check-eligible-working-parent-childcare'
+          link: 'https://www.gov.uk/free-childcare-if-working/apply-for-free-childcare-if-youre-working'
         });
       }
 
@@ -128,7 +128,7 @@ const Eligibility: React.FC = () => {
           reason: 'Your income meets the criteria, but funding for this age group starts at 9 months.',
           hours: 0,
           type: 'funding',
-          link: 'https://www.gov.uk/check-eligible-working-parent-childcare'
+          link: 'https://www.gov.uk/free-childcare-if-working/check-youre-eligible'
         });
       }
     }
