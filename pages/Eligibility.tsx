@@ -22,13 +22,11 @@ const Eligibility: React.FC = () => {
     isPregnant: false
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [email, setEmail] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
 
   // 2026 Estimated Threshold: ~£195/week (16 hours at National Living Wage)
   const MIN_EARNINGS_TEXT = "at least £195/week (approx. 16 hours at National Living Wage)";
 
-  const totalSteps = 9;
+  const totalSteps = 8;
 
   const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -42,6 +40,7 @@ const Eligibility: React.FC = () => {
     const month = NOW.getMonth();
     const date = NOW.getDate();
     
+    // Logic for 2026 intake periods
     if (month < 3 || (month === 3 && date <= 31)) {
       return { term: "1 April", window: `15 Jan to 31 Mar`, deadline: `31 Mar`, active: (month > 0 || (month === 0 && date >= 15)) };
     } else if (month < 8 || (month === 7 && date <= 31)) {
@@ -74,20 +73,19 @@ const Eligibility: React.FC = () => {
           title: '15 Hours Universal Funding',
           category: 'Universal',
           description: 'Standard funded childcare for all 3 and 4-year-olds.',
-          reason: 'Every child in England qualifies for 15 hours automatically from the term after their 3rd birthday, regardless of your employment or income.',
+          reason: 'Every child in England qualifies for 15 hours automatically from the term after their 3rd birthday.',
           hours: 15,
           type: 'funding',
           link: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-and-education-for-2-to-4-year-olds'
         });
 
-        // 2. WORKING PARENT TOP-UP (3-4y)
         if (isWorkingEligible) {
           schemes.push({
             id: 'eng-30h-work',
             title: 'Working Parent Top-up (+15h)',
             category: 'Working Families',
             description: 'An additional 15 hours for working families, totaling 30 hours.',
-            reason: `You qualify for the extra 15 hours because you (and your partner) earn ${MIN_EARNINGS_TEXT} and less than £100,000 net income per year.`,
+            reason: `You qualify for the extra 15 hours because you (and your partner) earn ${MIN_EARNINGS_TEXT} and less than £100k/year.`,
             hours: 15,
             type: 'funding',
             link: 'https://www.gov.uk/apply-30-hours-free-childcare'
@@ -95,42 +93,39 @@ const Eligibility: React.FC = () => {
         }
       } 
       
-      // 3. WORKING PARENT ENTITLEMENT (9m - 2y)
       else if (['9m-2y', '2y'].includes(data.childAge) && isWorkingEligible) {
         schemes.push({
           id: 'eng-expansion-30h',
           title: '30 Hours Working Parent Entitlement',
           category: 'Working Families',
           description: 'The full 30-hour expansion is now active for toddlers from 9 months old.',
-          reason: `As a working family earning ${MIN_EARNINGS_TEXT}, your child qualifies for the full 30 hours now that they are over 9 months old.`,
+          reason: `As a working family earning ${MIN_EARNINGS_TEXT}, your child qualifies for the full 30 hours.`,
           hours: 30,
           type: 'funding',
           link: 'https://www.gov.uk/check-eligible-working-parent-childcare'
         });
       }
 
-      // 4. SUPPORT-BASED 15 HOURS (2y)
       if (data.childAge === '2y' && (onBenefits || data.childDisabled)) {
         schemes.push({
           id: 'eng-2y-support',
           title: '15 Hours Support-based Funding',
           category: 'Support-Based',
           description: 'Specifically for 2-year-olds whose families require extra financial or health support.',
-          reason: `Your 2-year-old qualifies because ${onBenefits ? 'you are receiving qualifying benefits' : ''}${onBenefits && data.childDisabled ? ' and ' : ''}${data.childDisabled ? 'your child has an EHCP or receives DLA' : ''}.`,
+          reason: `Your 2-year-old qualifies because ${onBenefits ? 'you receive qualifying benefits' : 'your child has an EHCP or receives DLA'}.`,
           hours: 15,
           type: 'funding',
           link: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-2-year-olds'
         });
       }
 
-      // 5. FUTURE ELIGIBILITY (Under 9m)
       if (data.childAge === 'under9m' && isWorkingEligible) {
         schemes.push({
           id: 'eng-future',
           title: 'Future 30 Hours (Starts at 9m)',
           category: 'Working Families',
           description: 'You will qualify for 30 hours once your child reaches 9 months of age.',
-          reason: 'Your income meets the criteria, but the funding for this age group starts only once the child is 9 months old.',
+          reason: 'Your income meets the criteria, but funding for this age group starts at 9 months.',
           hours: 0,
           type: 'funding',
           link: 'https://www.gov.uk/check-eligible-working-parent-childcare'
@@ -138,28 +133,26 @@ const Eligibility: React.FC = () => {
       }
     }
 
-    // SCOTLAND (Universal 1140h for 3-4y)
     if (data.location === 'Scotland' && (data.childAge === '3-4y' || (data.childAge === '2y' && (onBenefits || data.childDisabled)))) {
       schemes.push({
         id: 'sco-1140h',
         title: '1,140 Hours Funded Childcare',
         category: 'Universal',
         description: 'Scotland provides a universal 1,140 hours a year (approx 30h/week).',
-        reason: 'All 3 and 4-year-olds in Scotland qualify automatically. Eligible 2-year-olds qualify based on family support criteria.',
+        reason: 'All 3 and 4-year-olds in Scotland qualify automatically.',
         hours: 30,
         type: 'funding',
         link: 'https://www.parentclub.scot/articles/funded-early-learning-and-childcare'
       });
     }
 
-    // TAX-FREE CHILDCARE (UK Wide)
     if (isWorkingEligible && data.childAge !== '5plus') {
       schemes.push({
         id: 'tfc',
         title: 'Tax-Free Childcare (20% Savings)',
         category: 'Financial',
         description: 'The government adds £2 for every £8 you pay your provider.',
-        reason: 'Because you are working, earn under £100k, and your child is under 12, you can save up to £2,000 per child per year.',
+        reason: 'Because you are working and earn under £100k, you can save up to £2,000 per child per year.',
         hours: 0,
         type: 'financial-support',
         link: 'https://www.gov.uk/tax-free-childcare'
@@ -168,13 +161,6 @@ const Eligibility: React.FC = () => {
 
     return schemes;
   }, [data]);
-
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    setEmailSent(true);
-    setTimeout(() => setEmailSent(false), 5000);
-  };
 
   const renderStep = () => {
     switch (step) {
@@ -195,29 +181,6 @@ const Eligibility: React.FC = () => {
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Your details</h2>
-            <div className="space-y-6">
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Your age</label>
-                <div className="flex items-center gap-6">
-                   <div className="text-4xl font-black text-teal-600 w-16">{data.parentAge}</div>
-                   <input type="range" min="16" max="65" value={data.parentAge} onChange={(e) => updateData({ parentAge: parseInt(e.target.value) })} className="flex-grow accent-teal-600" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button onClick={() => updateData({ isStudent: !data.isStudent })} className={`p-6 rounded-2xl border-2 transition text-left flex flex-col gap-1 ${data.isStudent ? 'border-teal-600 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
-                   <span className="font-bold text-slate-900 text-sm">Are you a student?</span>
-                </button>
-                <button onClick={() => updateData({ isPregnant: !data.isPregnant })} className={`p-6 rounded-2xl border-2 transition text-left flex flex-col gap-1 ${data.isPregnant ? 'border-teal-600 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
-                   <span className="font-bold text-slate-900 text-sm">Are you pregnant?</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Child's age</h2>
             <div className="grid grid-cols-1 gap-3">
               {(['under9m', '9m-2y', '2y', '3-4y', '5plus'] as ChildAge[]).map((age) => (
@@ -232,7 +195,7 @@ const Eligibility: React.FC = () => {
             </div>
           </div>
         );
-      case 4:
+      case 3:
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Your household</h2>
@@ -248,7 +211,7 @@ const Eligibility: React.FC = () => {
             </div>
           </div>
         );
-      case 5:
+      case 4:
         return (
           <div className="space-y-8">
             <h2 className="text-2xl font-bold text-slate-900">Employment</h2>
@@ -278,7 +241,7 @@ const Eligibility: React.FC = () => {
             </div>
           </div>
         );
-      case 6:
+      case 5:
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Income check</h2>
@@ -292,7 +255,7 @@ const Eligibility: React.FC = () => {
             </div>
           </div>
         );
-      case 7:
+      case 6:
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Any benefits?</h2>
@@ -309,7 +272,7 @@ const Eligibility: React.FC = () => {
             </div>
           </div>
         );
-      case 8:
+      case 7:
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Health & SEN</h2>
@@ -326,7 +289,7 @@ const Eligibility: React.FC = () => {
             </div>
           </div>
         );
-      case 9:
+      case 8:
         return (
           <div className="space-y-6 text-center py-10">
             <div className="w-20 h-20 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
@@ -365,16 +328,55 @@ const Eligibility: React.FC = () => {
                 <i className="fa-solid fa-clock text-4xl text-teal-100"></i>
               </div>
               <div className="bg-blue-50 rounded-3xl p-8 border border-blue-100">
-                <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">When to apply</h4>
-                {data.location === 'England' ? (
-                  <div className="space-y-2">
-                    <p className="text-xs text-blue-700">For term starting <strong>{appWindow.term}</strong>:</p>
-                    <div className={`bg-white p-3 rounded-xl border border-blue-100 font-black text-sm ${appWindow.active ? 'text-teal-700' : 'text-slate-400'}`}>
-                       {appWindow.active ? `Window is OPEN! Apply by ${appWindow.deadline}` : `Window opens ${appWindow.window.split(' to ')[0]}`}
-                    </div>
+                <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">When to Apply</h4>
+                <div className="space-y-2">
+                  <p className="text-xs text-blue-700">Next Term: <strong>{appWindow.term}</strong></p>
+                  <div className={`bg-white p-3 rounded-xl border border-blue-100 font-black text-sm ${appWindow.active ? 'text-teal-700' : 'text-slate-400'}`}>
+                     {appWindow.active ? `Apply by ${appWindow.deadline}` : `Opens ${appWindow.window.split(' to ')[0]}`}
                   </div>
-                ) : <p className="text-xs text-blue-700">In {data.location}, funding intakes vary by local council. Check your regional portal below.</p>}
+                </div>
               </div>
+            </div>
+
+            {/* SIMPLE APPLICATION TABLE */}
+            <div className="mb-16 bg-slate-50 rounded-[2rem] border border-slate-200 overflow-hidden">
+               <div className="px-8 py-5 border-b bg-white/50">
+                  <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i className="fa-solid fa-calendar-check text-teal-600"></i>
+                    England 2026 Intake Periods
+                  </h4>
+               </div>
+               <div className="overflow-x-auto">
+                 <table className="w-full text-left text-sm">
+                   <thead>
+                     <tr className="text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-100/50">
+                       <th className="px-8 py-4">Intake Term</th>
+                       <th className="px-8 py-4">Application Window</th>
+                       <th className="px-8 py-4 text-right">Deadline</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-slate-200">
+                     {[
+                       { term: 'January', window: '15 Oct – 31 Dec', deadline: '31 Dec' },
+                       { term: 'April', window: '15 Jan – 31 Mar', deadline: '31 Mar' },
+                       { term: 'September', window: '12 May – 31 Aug', deadline: '31 Aug' }
+                     ].map((item) => (
+                       <tr key={item.term} className={appWindow.term.includes(item.term) ? "bg-teal-50" : "bg-white"}>
+                         <td className="px-8 py-5 font-bold text-slate-900 flex items-center gap-2">
+                           {item.term} 
+                           {appWindow.term.includes(item.term) && <span className="text-[8px] bg-teal-600 text-white px-2 py-0.5 rounded-full">ACTIVE</span>}
+                         </td>
+                         <td className="px-8 py-5 text-slate-500 font-medium">{item.window}</td>
+                         <td className="px-8 py-5 text-right font-black text-slate-900">{item.deadline}</td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
+               <div className="p-4 bg-teal-50 text-[10px] text-teal-700 italic border-t border-teal-100 flex items-center gap-2">
+                  <i className="fa-solid fa-circle-exclamation"></i>
+                  Note: You must have your code by the deadline to start funding in the next term.
+               </div>
             </div>
 
             <div className="space-y-16">
@@ -389,7 +391,7 @@ const Eligibility: React.FC = () => {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {catSchemes.map((scheme) => (
-                        <div key={scheme.id} className="p-8 rounded-[2rem] border border-slate-100 bg-white flex flex-col hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+                        <div key={scheme.id} className="p-8 rounded-[2rem] border border-slate-100 bg-white flex flex-col hover:shadow-xl transition-all duration-300 relative overflow-hidden h-full">
                           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 -mr-16 -mt-16 rounded-full opacity-50"></div>
                           <div className="relative flex flex-col h-full">
                             <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider mb-2 w-fit ${
@@ -402,7 +404,7 @@ const Eligibility: React.FC = () => {
                             <h4 className="font-bold text-xl text-slate-900 mb-3">{scheme.title}</h4>
                             <p className="text-sm text-slate-500 leading-relaxed mb-6">{scheme.description}</p>
                             
-                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-6 flex-grow">
+                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8 flex-grow">
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Why you qualify</span>
                               <p className="text-xs text-slate-700 font-medium leading-relaxed italic">"{scheme.reason}"</p>
                             </div>
