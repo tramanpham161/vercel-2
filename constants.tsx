@@ -27,6 +27,31 @@ export const PROVIDER_TYPES = [
   'Not sure'
 ];
 
+/**
+ * OFFICIAL LINKS CONFIGURATION
+ */
+export const OFFICIAL_LINKS = {
+  directories: {
+    'England': 'https://www.gov.uk/find-local-council-childcare',
+    'Scotland': 'https://www.parentclub.scot/articles/funded-early-learning-and-childcare',
+    'Wales': 'https://careinspectorate.wales/find-a-care-service',
+    'Northern Ireland': 'https://www.familysupportni.gov.uk/ServiceSearch/1/Childcare'
+  },
+  schemes: {
+    eng15hUniversal: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-and-education-for-2-to-4-year-olds',
+    eng30hWorking: 'https://www.gov.uk/apply-30-hours-free-childcare',
+    engExpansion: 'https://www.gov.uk/check-eligible-working-parent-childcare',
+    eng2hSupport: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-2-year-olds',
+    scotland1140: 'https://www.parentclub.scot/articles/funded-early-learning-and-childcare',
+    walesOffer: 'https://www.gov.wales/get-childcare-offer-wales-parents',
+    walesFlyingStart: 'https://www.gov.wales/get-help-flying-start',
+    niPreschool: 'https://www.eani.org.uk/parents/admissions/pre-school-admissions',
+    niSubsidy: 'https://www.health-ni.gov.uk/childcare-subsidy-scheme',
+    taxFreeChildcare: 'https://www.gov.uk/tax-free-childcare',
+    childcareChoices: 'https://www.childcarechoices.gov.uk/'
+  }
+};
+
 export const CHILDCARE_DATA_2024 = {
   year: 2024,
   rates: {
