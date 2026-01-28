@@ -52,17 +52,16 @@ const Footer = () => (
           </ul>
         </div>
         <div>
-          <h4 className="font-bold text-white mb-6 text-sm uppercase tracking-widest">Official Links</h4>
+          <h4 className="font-bold text-white mb-6 text-sm uppercase tracking-widest">Official Support</h4>
           <ul className="space-y-3 text-sm">
-            <li><a href="https://www.childcarechoices.gov.uk" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Childcare Choices (UK)</a></li>
-            <li><a href="https://www.gov.uk/browse/childcare-parenting/financial-help-children" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Gov.UK Financial Help</a></li>
-            <li><a href="https://www.nidirect.gov.uk/articles/help-childcare-costs" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">NI Direct Childcare</a></li>
-            <li><a href="https://www.parentclub.scot/articles/funded-early-learning-and-childcare" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Parent Club Scotland</a></li>
+            <li><a href="https://www.gov.uk/free-childcare-if-working" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Free Childcare (Gov.uk)</a></li>
+            <li><a href="https://beststartinlife.gov.uk" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Best Start in Life</a></li>
+            <li><a href="https://www.gov.uk/browse/childcare-parenting/financial-help-children" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Financial Help (Gov.uk)</a></li>
           </ul>
         </div>
       </div>
       <div className="mt-16 pt-8 border-t border-slate-800 text-xs text-center text-slate-500">
-        &copy; {new Date().getFullYear()} Childcare Checker. This is an independent tool for informational purposes. <br className="md:hidden" /> Always confirm your eligibility with official government sources.
+        &copy; {new Date().getFullYear()} Childcare Checker UK. Independent information tool. Not affiliated with HMRC or DfE.
       </div>
     </div>
   </footer>
