@@ -17,6 +17,9 @@ export interface EligibilityData {
   postcode: string;
   hoursPerWeek: number;
   providerType: string;
+  parentAge: number;
+  isStudent: boolean;
+  isPregnant: boolean;
 }
 
 export interface ExtraCost {
@@ -48,6 +51,9 @@ export interface Scheme {
   id: string;
   title: string;
   description: string;
+  reason: string;
+  category: 'Universal' | 'Working Families' | 'Support-Based' | 'Financial';
   hours: number;
-  type: 'funding' | 'financial-support';
+  type: 'funding' | 'financial-support' | 'health-food';
+  link?: string;
 }
