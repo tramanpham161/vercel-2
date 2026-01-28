@@ -52,7 +52,6 @@ const Eligibility: React.FC = () => {
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    // Simulate sending email
     setEmailSent(true);
     setTimeout(() => setEmailSent(false), 5000);
   };
@@ -65,14 +64,11 @@ const Eligibility: React.FC = () => {
     const incomeQualifies = data.incomeInRange === 'yes';
     const isWorkingEligible = userQualifiesWork && partnerQualifiesWork && incomeQualifies;
     const onBenefits = data.benefits.length > 0;
-    const isEngland = data.location === 'England';
-    const isWales = data.location === 'Wales';
-    const isScotland = data.location === 'Scotland';
-    const isNI = data.location === 'Northern Ireland';
 
-    // --- 1. CHILDCARE HOURS ---
+    // --- 1. CHILDCARE HOURS (REGION SPECIFIC) ---
 
-    if (isEngland) {
+    // ENGLAND
+    if (data.location === 'England') {
       if (data.childAge === '3-4y') {
         schemes.push({
           id: 'eng-15h-univ',
@@ -85,8 +81,8 @@ const Eligibility: React.FC = () => {
         if (isWorkingEligible) {
           schemes.push({
             id: 'eng-30h-work',
-            title: '30 Hours Free Childcare',
-            description: 'Eligible working parents of 3-4 year olds can get an extra 15 hours.',
+            title: '30 Hours Free Childcare (Working Parents)',
+            description: 'An extra 15 hours (30 total) for eligible working parents of 3-4 year olds.',
             hours: 15,
             type: 'funding',
             link: 'https://www.gov.uk/apply-30-hours-free-childcare'
@@ -96,7 +92,7 @@ const Eligibility: React.FC = () => {
         schemes.push({
           id: 'eng-expansion',
           title: 'Working Parent Entitlement (Expansion)',
-          description: 'Working parents of children from 9 months up can access up to 30 hours.',
+          description: 'Working parents of children from 9 months to 2 years can now access 15-30 hours of support.',
           hours: 15,
           type: 'funding',
           link: 'https://www.gov.uk/check-eligible-working-parent-childcare'
@@ -106,7 +102,7 @@ const Eligibility: React.FC = () => {
         schemes.push({
           id: 'eng-2y-support',
           title: '15 Hours Support-based (Age 2)',
-          description: 'Available for families on benefits or children with extra needs.',
+          description: 'Available if you receive certain benefits or your child has additional needs.',
           hours: 15,
           type: 'funding',
           link: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-2-year-olds'
@@ -114,7 +110,8 @@ const Eligibility: React.FC = () => {
       }
     }
 
-    if (isScotland && ['3-4y', '2y'].includes(data.childAge)) {
+    // SCOTLAND
+    if (data.location === 'Scotland' && ['3-4y', '2y'].includes(data.childAge)) {
       if (data.childAge === '3-4y' || onBenefits || data.childDisabled) {
         schemes.push({
           id: 'sco-1140h',
@@ -127,39 +124,52 @@ const Eligibility: React.FC = () => {
       }
     }
 
-    if (isWales && data.childAge === '3-4y') {
-      schemes.push({
-        id: 'wal-foundation',
-        title: 'Early Education (Wales)',
-        description: 'Universal early education support for all 3 and 4-year-olds.',
-        hours: 10,
-        type: 'funding',
-        link: 'https://www.gov.wales/get-help-childcare-costs'
-      });
-      if (isWorkingEligible) {
+    // WALES
+    if (data.location === 'Wales') {
+      if (data.childAge === '3-4y') {
         schemes.push({
-          id: 'wal-offer',
-          title: 'Childcare Offer for Wales',
-          description: 'Up to 30 hours total for working parents of 3-4 year olds.',
-          hours: 20,
+          id: 'wal-foundation',
+          title: 'Early Education (Wales Foundation Phase)',
+          description: 'Minimum 10 hours of early education for all 3 and 4-year-olds in Wales.',
+          hours: 10,
           type: 'funding',
-          link: 'https://www.gov.wales/childcare-offer-wales-parents'
+          link: 'https://www.gov.wales/get-help-childcare-costs'
+        });
+        if (isWorkingEligible) {
+          schemes.push({
+            id: 'wal-offer',
+            title: 'Childcare Offer for Wales',
+            description: 'Up to 30 hours of combined education and childcare for 3-4 year olds.',
+            hours: 20,
+            type: 'funding',
+            link: 'https://www.gov.wales/childcare-offer-wales-parents'
+          });
+        }
+      } else if (data.childAge === '2y' && (onBenefits || data.childDisabled)) {
+        schemes.push({
+          id: 'wal-flying-start',
+          title: 'Flying Start Childcare',
+          description: 'Funded childcare for 2-year-olds (12.5h/week) in Flying Start areas.',
+          hours: 12.5,
+          type: 'funding',
+          link: 'https://www.gov.wales/get-help-childcare-costs'
         });
       }
     }
 
-    if (isNI && data.childAge === '3-4y') {
+    // NORTHERN IRELAND
+    if (data.location === 'Northern Ireland' && data.childAge === '3-4y') {
       schemes.push({
         id: 'ni-preschool',
-        title: 'Pre-school Education (NI)',
-        description: 'Funded places for children in their immediate pre-school year.',
+        title: 'Pre-school Education Programme',
+        description: 'Funded pre-school places (12.5h - 22.5h) for children in their immediate pre-school year.',
         hours: 12.5,
         type: 'funding',
         link: 'https://www.nidirect.gov.uk/articles/applying-pre-school-place'
       });
     }
 
-    // --- 2. FINANCIAL & EXTRA ---
+    // --- 2. FINANCIAL SUPPORT (UK WIDE) ---
 
     if (isWorkingEligible && data.childAge !== '5plus') {
       schemes.push({
@@ -172,38 +182,63 @@ const Eligibility: React.FC = () => {
       });
     }
 
-    if (onBenefits && (userQualifiesWork || partnerQualifiesWork)) {
+    if (onBenefits && (data.userWorkStatus === 'working' || data.partnerWorkStatus === 'working')) {
       schemes.push({
         id: 'uc-childcare',
-        title: 'Universal Credit Childcare',
-        description: 'Claim back up to 85% of costs for working parents on UC.',
+        title: 'Universal Credit for Childcare',
+        description: 'Working parents can claim back up to 85% of their childcare costs.',
         hours: 0,
         type: 'financial-support',
         link: 'https://www.gov.uk/help-with-childcare-costs/universal-credit'
       });
     }
 
-    if (onBenefits || data.isPregnant) {
-      const title = isScotland ? 'Best Start Foods' : 'Healthy Start Card';
+    if (data.isStudent && data.location !== 'Northern Ireland') {
       schemes.push({
-        id: 'healthy-start',
-        title: title,
-        description: 'Support for healthy food and milk for pregnant women and young children.',
+        id: 'childcare-grant',
+        title: 'Childcare Grant (Higher Education)',
+        description: 'Full-time students with children can get help with costs via Student Finance.',
         hours: 0,
-        type: 'health-food',
-        link: isScotland ? 'https://www.mygov.scot/best-start-grant-best-start-foods' : 'https://www.healthystart.nhs.uk/'
+        type: 'financial-support',
+        link: 'https://www.gov.uk/childcare-grant'
       });
     }
 
-    if (isEngland && (onBenefits || data.childDisabled)) {
+    // --- 3. HEALTH & EXTRA HELP ---
+
+    if ((onBenefits || data.isPregnant) && data.childAge !== '5plus') {
+      const title = data.location === 'Scotland' ? 'Best Start Foods' : 'Healthy Start Card';
       schemes.push({
-        id: 'eypp',
-        title: 'Early Years Pupil Premium',
-        description: 'Extra provider funding for children from low-income families.',
+        id: 'healthy-start',
+        title: title,
+        description: 'Help to buy healthy food and milk for pregnant women and children under 4.',
         hours: 0,
         type: 'health-food',
-        link: 'https://www.gov.uk/get-extra-early-years-funding'
+        link: data.location === 'Scotland' ? 'https://www.mygov.scot/best-start-grant-best-start-foods' : 'https://www.healthystart.nhs.uk/'
       });
+    }
+
+    if (data.location === 'England') {
+      if (onBenefits || data.childDisabled) {
+        schemes.push({
+          id: 'eypp',
+          title: 'Early Years Pupil Premium (EYPP)',
+          description: 'Extra funding paid to your childcare provider to help support your child.',
+          hours: 0,
+          type: 'health-food',
+          link: 'https://www.gov.uk/get-extra-early-years-funding'
+        });
+      }
+      if (data.childDisabled) {
+        schemes.push({
+          id: 'daf',
+          title: 'Disability Access Fund (DAF)',
+          description: 'A yearly payment for providers to help them make adjustments for disabled children.',
+          hours: 0,
+          type: 'health-food',
+          link: 'https://www.gov.uk/get-extra-early-years-funding'
+        });
+      }
     }
 
     return schemes;
@@ -228,7 +263,7 @@ const Eligibility: React.FC = () => {
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Profile Details</h2>
+            <h2 className="text-2xl font-bold text-slate-900">About you</h2>
             <div className="space-y-6">
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Your age</label>
@@ -239,12 +274,12 @@ const Eligibility: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button onClick={() => updateData({ isStudent: !data.isStudent })} className={`p-6 rounded-2xl border-2 transition text-left flex flex-col gap-1 ${data.isStudent ? 'border-teal-600 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
-                   <span className="font-bold text-slate-900">Are you a student?</span>
-                   <span className="text-[10px] text-slate-400">Higher Education status.</span>
+                   <span className="font-bold text-slate-900 text-sm">Are you a student?</span>
+                   <span className="text-[10px] text-slate-400">Full-time HE.</span>
                 </button>
                 <button onClick={() => updateData({ isPregnant: !data.isPregnant })} className={`p-6 rounded-2xl border-2 transition text-left flex flex-col gap-1 ${data.isPregnant ? 'border-teal-600 bg-teal-50' : 'border-slate-100 bg-slate-50'}`}>
-                   <span className="font-bold text-slate-900">Are you pregnant?</span>
-                   <span className="text-[10px] text-slate-400">Relevant for Healthy Start.</span>
+                   <span className="font-bold text-slate-900 text-sm">Are you pregnant?</span>
+                   <span className="text-[10px] text-slate-400">Health support check.</span>
                 </button>
               </div>
             </div>
@@ -320,7 +355,7 @@ const Eligibility: React.FC = () => {
             <p className="text-slate-500 text-sm">Most funding requires earning ≥£183/wk and &lt;£100k net income per year.</p>
             <div className="grid grid-cols-1 gap-3 pt-4">
               {[
-                { val: 'yes', label: 'Yes, we are within this range' },
+                { val: 'yes', label: 'Yes, we fit this range' },
                 { val: 'no', label: 'No, someone is outside this range' },
                 { val: 'notSure', label: 'Not sure / Irregular earnings' },
               ].map((opt) => (
@@ -371,8 +406,8 @@ const Eligibility: React.FC = () => {
             <div className="w-20 h-20 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
               <i className="fa-solid fa-list-check"></i>
             </div>
-            <h2 className="text-3xl font-black text-slate-900">All set!</h2>
-            <p className="text-slate-500 max-w-sm mx-auto">We've cross-referenced your details with all national and regional support schemes.</p>
+            <h2 className="text-3xl font-black text-slate-900">Check Complete!</h2>
+            <p className="text-slate-500 max-w-sm mx-auto">We've calculated your estimated entitlements based on your {data.location} profile.</p>
           </div>
         );
       default: return null;
@@ -392,37 +427,37 @@ const Eligibility: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 py-16 animate-in fade-in zoom-in-95 duration-500">
         <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100">
           <div className="bg-slate-900 p-12 text-white text-center relative">
-            <h2 className="text-4xl font-black mb-2">Support Engine Results</h2>
-            <p className="text-teal-400 font-bold uppercase tracking-widest text-xs">Guidelines for {data.location}</p>
+            <h2 className="text-4xl font-black mb-2">Your Eligibility Summary</h2>
+            <p className="text-teal-400 font-bold uppercase tracking-widest text-xs">Official rules for {data.location}</p>
           </div>
 
           <div className="p-10 md:p-14">
-            {/* Disclaimer */}
+            {/* Cross-check Disclaimer */}
             <div className="mb-12 p-6 bg-amber-50 rounded-3xl border border-amber-100 flex items-start gap-4">
                <i className="fa-solid fa-triangle-exclamation text-amber-600 mt-1"></i>
-               <p className="text-xs text-amber-900 leading-relaxed font-medium">
-                 <strong>Important:</strong> These results are an estimate based solely on your inputs. Please cross-check this information with official government websites (like GOV.UK) as individual circumstances and eligibility dates may vary.
-               </p>
+               <div className="text-xs text-amber-900 leading-relaxed">
+                 <strong>Cross-check Required:</strong> This summary is based on your inputs. Eligibility criteria can change. Please verify these results with official government portals (e.g., GOV.UK, Parent Club Scotland) before making financial commitments.
+               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
               <div className="bg-teal-50 rounded-3xl p-8 border border-teal-100 flex items-center justify-between">
                 <div>
-                  <span className="text-teal-600 text-[10px] font-bold block mb-1 uppercase tracking-widest">Weekly Hours</span>
-                  <div className="text-6xl font-black text-teal-900 leading-none">{totalFunded}</div>
+                  <span className="text-teal-600 text-[10px] font-bold block mb-1 uppercase tracking-widest">Est. Funding Credit</span>
+                  <div className="text-6xl font-black text-teal-900 leading-none">{totalFunded} <span className="text-lg font-normal">hrs</span></div>
                 </div>
                 <i className="fa-solid fa-clock text-4xl text-teal-100"></i>
               </div>
               
               <div className="bg-blue-50 rounded-3xl p-8 border border-blue-100">
-                <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">Next Intake</h4>
+                <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">Next Intake Window</h4>
                 {data.location === 'England' ? (
                   <div className="space-y-2">
                     <p className="text-xs text-blue-700">For term starting <strong>{appWindow.term}</strong>:</p>
-                    <div className="bg-white p-3 rounded-xl border border-blue-100 font-black text-blue-900 text-sm italic">Apply by {appWindow.deadline}</div>
+                    <div className="bg-white p-3 rounded-xl border border-blue-100 font-black text-blue-900 text-sm">Apply by {appWindow.deadline}</div>
                   </div>
                 ) : (
-                  <p className="text-xs text-blue-700">Check with your regional authority in {data.location} for key application dates.</p>
+                  <p className="text-xs text-blue-700">Check with {data.location} local authorities for key application dates.</p>
                 )}
               </div>
             </div>
@@ -444,7 +479,7 @@ const Eligibility: React.FC = () => {
                           <p className="text-sm text-slate-500 leading-relaxed mb-6 flex-grow">{scheme.description}</p>
                           {scheme.link && (
                             <a href={scheme.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-teal-600 font-bold text-xs">
-                              Official Info <i className="fa-solid fa-arrow-right"></i>
+                              Check Official Details <i className="fa-solid fa-arrow-right"></i>
                             </a>
                           )}
                         </div>
@@ -455,15 +490,55 @@ const Eligibility: React.FC = () => {
               })}
             </div>
 
-            <div className="mt-20 bg-slate-100 rounded-[3rem] p-10 md:p-14 border border-slate-200">
+            {/* Application Timeline Table (England) */}
+            {data.location === 'England' && (
+              <div className="mt-16 bg-slate-50 rounded-[2rem] p-8 border border-slate-200">
+                <h4 className="text-xl font-bold text-slate-900 mb-6">When to apply (England)</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-slate-200">
+                        <th className="py-3 px-4 font-bold text-slate-500 uppercase text-[10px]">Your child turns age group</th>
+                        <th className="py-3 px-4 font-bold text-slate-500 uppercase text-[10px]">When to apply</th>
+                        <th className="py-3 px-4 font-bold text-slate-500 uppercase text-[10px]">Term starts</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <tr>
+                        <td className="py-4 px-4 font-medium">1 Sept - 31 Dec</td>
+                        <td className="py-4 px-4">15 Oct - 31 Dec</td>
+                        <td className="py-4 px-4 font-bold text-teal-700">1 January</td>
+                      </tr>
+                      <tr>
+                        <td className="py-4 px-4 font-medium">1 Jan - 31 Mar</td>
+                        <td className="py-4 px-4">15 Jan - 31 Mar</td>
+                        <td className="py-4 px-4 font-bold text-teal-700">1 April</td>
+                      </tr>
+                      <tr>
+                        <td className="py-4 px-4 font-medium">1 Apr - 31 Aug</td>
+                        <td className="py-4 px-4">12 May - 31 Aug</td>
+                        <td className="py-4 px-4 font-bold text-teal-700">1 September</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-12 bg-white rounded-[3rem] p-10 md:p-14 border border-slate-200 shadow-sm">
                 <h4 className="text-2xl font-black text-slate-900 mb-4">Find an Approved Provider</h4>
                 <p className="text-sm text-slate-600 mb-8 max-w-2xl leading-relaxed">
-                  Now that you know your eligibility, use the official directory for <strong>{data.location}</strong> to find a registered childcare setting near you:
+                  Funding is only valid at registered settings. Use the official directory for <strong>{data.location}</strong> to find one near you:
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <a href={providerLinks[data.location]} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 px-10 py-5 rounded-2xl font-bold hover:border-teal-600 hover:text-teal-600 transition shadow-sm group">
-                    Official Directory <i className="fa-solid fa-external-link text-[10px] group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+                  <a href={providerLinks[data.location]} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 bg-slate-900 text-white px-10 py-5 rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg group">
+                    Directory for {data.location} <i className="fa-solid fa-external-link text-[10px] transition-transform group-hover:translate-x-1 group-hover:-translate-y-1"></i>
                   </a>
+                  {data.location === 'England' && (
+                    <a href="https://reports.ofsted.gov.uk/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 px-10 py-5 rounded-2xl font-bold hover:border-teal-600 hover:text-teal-600 transition shadow-sm">
+                      Ofsted Reports
+                    </a>
+                  )}
                 </div>
             </div>
 
@@ -479,10 +554,10 @@ const Eligibility: React.FC = () => {
                  ) : (
                    <form onSubmit={handleEmailSubmit} className="max-w-md mx-auto flex flex-col sm:flex-row gap-3">
                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="flex-grow p-4 rounded-xl text-slate-900 outline-none" required />
-                     <button type="submit" className="bg-slate-900 px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition">Send Now</button>
+                     <button type="submit" className="bg-slate-900 px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition">Email Me</button>
                    </form>
                  )}
-                 <p className="mt-6 text-sm text-teal-100 opacity-70">We respect your privacy and don't store your personal data.</p>
+                 <p className="mt-6 text-sm text-teal-100 opacity-70">Privately delivered for your records.</p>
                </div>
             </div>
 
@@ -512,9 +587,9 @@ const Eligibility: React.FC = () => {
           {renderStep()}
         </div>
         <div className="mt-12 flex items-center justify-between pt-8 border-t border-slate-100">
-          <button onClick={prevStep} disabled={step === 1} className={`font-bold transition-all px-6 py-3 rounded-xl ${step === 1 ? 'opacity-0 cursor-default' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}>Back</button>
+          <button onClick={prevStep} disabled={step === 1} className={`font-bold transition-all px-6 py-3 rounded-xl ${step === 1 ? 'opacity-0' : 'text-slate-400 hover:text-slate-600'}`}>Back</button>
           <button onClick={step === totalSteps ? () => setIsSubmitted(true) : nextStep} className="bg-teal-600 text-white px-10 py-4 rounded-2xl font-bold shadow-xl shadow-teal-600/20 hover:bg-teal-700 transition-all active:scale-95">
-            {step === totalSteps ? 'See Results' : 'Next'}
+            {step === totalSteps ? 'Show My Results' : 'Continue'}
           </button>
         </div>
       </div>
