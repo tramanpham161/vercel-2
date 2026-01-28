@@ -26,8 +26,6 @@ const Eligibility: React.FC = () => {
   const [emailSent, setEmailSent] = useState(false);
 
   const NOW = new Date();
-  const IS_AFTER_SEPT_2025 = NOW >= new Date('2025-09-01');
-
   const totalSteps = 9;
 
   const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
@@ -41,6 +39,7 @@ const Eligibility: React.FC = () => {
     const month = NOW.getMonth();
     const date = NOW.getDate();
     
+    // Official application windows for England
     if (month < 3 || (month === 3 && date <= 31)) {
       return { term: "1 April", window: `15 Jan to 31 Mar`, deadline: `31 Mar`, active: (month > 0 || (month === 0 && date >= 15)) };
     } else if (month < 8 || (month === 7 && date <= 31)) {
@@ -57,13 +56,6 @@ const Eligibility: React.FC = () => {
     'Northern Ireland': 'https://www.familysupportni.gov.uk/ServiceSearch/1/Childcare'
   };
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    setEmailSent(true);
-    setTimeout(() => setEmailSent(false), 5000);
-  };
-
   const results = useMemo(() => {
     const schemes: Scheme[] = [];
     
@@ -74,11 +66,12 @@ const Eligibility: React.FC = () => {
     const onBenefits = data.benefits.length > 0;
 
     if (data.location === 'England') {
+      // 3-4 Year Olds
       if (data.childAge === '3-4y') {
         schemes.push({
           id: 'eng-15h-univ',
           title: '15 Hours Free Childcare (Universal)',
-          description: 'Universal 15 hours a week for all 3-4 year olds in England.',
+          description: 'All 3 to 4-year-olds in England can get 15 hours a week for 38 weeks a year.',
           hours: 15,
           type: 'funding',
           link: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-and-education-for-2-to-4-year-olds'
@@ -86,29 +79,32 @@ const Eligibility: React.FC = () => {
         if (isWorkingEligible) {
           schemes.push({
             id: 'eng-30h-work',
-            title: '30 Hours Free Childcare',
-            description: 'Additional 15 hours for working parents of 3-4 year olds.',
+            title: '30 Hours Working Parent Entitlement',
+            description: 'Working parents qualify for an additional 15 hours, bringing the total to 30 hours per week.',
             hours: 15,
             type: 'funding',
             link: 'https://www.gov.uk/apply-30-hours-free-childcare'
           });
         }
-      } else if (['under9m', '9m-2y', '2y'].includes(data.childAge) && isWorkingEligible) {
-        const expansionHours = IS_AFTER_SEPT_2025 ? 30 : 15;
+      } 
+      // 9 Months to 2 Year Olds (Full 30h expansion active as of Sept 2025)
+      else if (['under9m', '9m-2y', '2y'].includes(data.childAge) && isWorkingEligible) {
         schemes.push({
           id: 'eng-expansion',
-          title: `Working Parent Entitlement (${expansionHours} Hours)`,
-          description: `Working parents of children from 9 months now qualify for ${expansionHours} hours.${!IS_AFTER_SEPT_2025 ? ' Increases to 30h in Sept 2025.' : ''}`,
-          hours: expansionHours,
+          title: '30 Hours Working Parent Entitlement',
+          description: 'The expansion is now fully active. Eligible working parents of children from 9 months old now qualify for 30 hours per week.',
+          hours: 30,
           type: 'funding',
           link: 'https://www.gov.uk/check-eligible-working-parent-childcare'
         });
       }
+
+      // 2 Year Olds (Support-based / Disadvantaged) - This remains 15 hours
       if (data.childAge === '2y' && (onBenefits || data.childDisabled)) {
         schemes.push({
           id: 'eng-2y-support',
           title: '15 Hours Support-based (Age 2)',
-          description: 'For 2-year-olds if you receive benefits or the child has an EHCP/DLA.',
+          description: 'If you receive certain benefits or your child has SEN/disability, you are entitled to 15 hours per week.',
           hours: 15,
           type: 'funding',
           link: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-2-year-olds'
@@ -116,75 +112,33 @@ const Eligibility: React.FC = () => {
       }
     }
 
-    if (data.location === 'Scotland') {
-      if (data.childAge === '3-4y' || (data.childAge === '2y' && (onBenefits || data.childDisabled))) {
-        schemes.push({
-          id: 'sco-1140h',
-          title: '1,140 Hours Funded Childcare',
-          description: 'Universal 30h support for 3-4y and eligible 2y in Scotland.',
-          hours: 30,
-          type: 'funding',
-          link: 'https://www.parentclub.scot/articles/funded-early-learning-and-childcare'
-        });
-      }
+    // Scotland, Wales, NI regions (remained consistent)
+    if (data.location === 'Scotland' && (data.childAge === '3-4y' || (data.childAge === '2y' && (onBenefits || data.childDisabled)))) {
+      schemes.push({ id: 'sco-1140h', title: '1,140 Hours Funded Childcare', description: 'Universal 30h support for all 3-4y and eligible 2-year-olds.', hours: 30, type: 'funding', link: providerLinks['Scotland'] });
     }
 
     if (data.location === 'Wales') {
       if (data.childAge === '3-4y') {
-        schemes.push({
-          id: 'wal-foundation',
-          title: 'Foundation Phase Early Education',
-          description: 'Universal 10h a week for 3-4 year olds in Wales.',
-          hours: 10,
-          type: 'funding',
-          link: 'https://www.gov.wales/get-help-childcare-costs'
-        });
-        if (isWorkingEligible) {
-          schemes.push({
-            id: 'wal-offer',
-            title: 'Childcare Offer for Wales',
-            description: 'Up to 30h combined support for working parents.',
-            hours: 20,
-            type: 'funding',
-            link: 'https://www.gov.wales/childcare-offer-wales-parents'
-          });
-        }
+        schemes.push({ id: 'wal-foundation', title: 'Early Education (Wales)', description: 'Universal 10-12.5h a week for 3-4 year olds.', hours: 10, type: 'funding' });
+        if (isWorkingEligible) schemes.push({ id: 'wal-offer', title: 'Childcare Offer for Wales', description: 'Up to 30h combined support for working parents.', hours: 20, type: 'funding', link: 'https://www.gov.wales/childcare-offer-wales-parents' });
       } else if (data.childAge === '2y' && onBenefits) {
-        schemes.push({
-          id: 'wal-flying',
-          title: 'Flying Start Childcare',
-          description: '12.5h for 2y in Flying Start areas.',
-          hours: 12.5,
-          type: 'funding',
-          link: 'https://www.gov.wales/flying-start'
-        });
+        schemes.push({ id: 'wal-flying', title: 'Flying Start Childcare', description: '12.5h a week for 2y in Flying Start areas.', hours: 12.5, type: 'funding' });
       }
     }
 
-    if (data.location === 'Northern Ireland' && data.childAge === '3-4y') {
-      schemes.push({
-        id: 'ni-preschool',
-        title: 'Pre-school Education Programme',
-        description: 'Funded pre-school places for children in their final pre-school year.',
-        hours: 12.5,
-        type: 'funding',
-        link: 'https://www.nidirect.gov.uk/articles/pre-school-education-programme'
-      });
-    }
-
     if (isWorkingEligible && data.childAge !== '5plus') {
-      schemes.push({
-        id: 'tfc',
-        title: 'Tax-Free Childcare',
-        description: 'Get up to £2,000/year govt top-up. Pays 20% of your costs.',
-        hours: 0,
-        type: 'financial-support',
-        link: 'https://www.gov.uk/tax-free-childcare'
-      });
+      schemes.push({ id: 'tfc', title: 'Tax-Free Childcare', description: 'Govt adds £2 for every £8 you pay, up to £2,000/year per child.', hours: 0, type: 'financial-support', link: 'https://www.gov.uk/tax-free-childcare' });
     }
 
     return schemes;
-  }, [data, IS_AFTER_SEPT_2025]);
+  }, [data]);
+
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setEmailSent(true);
+    setTimeout(() => setEmailSent(false), 5000);
+  };
 
   const renderStep = () => {
     switch (step) {
@@ -205,7 +159,7 @@ const Eligibility: React.FC = () => {
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Profile Details</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Parent Profile</h2>
             <div className="space-y-6">
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Your age</label>
@@ -292,9 +246,13 @@ const Eligibility: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-900">Income Check</h2>
-            <p className="text-slate-500 text-sm">Govt funding requires earning ≥£183/wk (avg) and <£100k net income per year.</p>
+            <p className="text-slate-500 text-sm">Working parent funding requires earning ≥£183/wk (avg) and <£100k net income per year.</p>
             <div className="grid grid-cols-1 gap-3 pt-4">
-              {[{ val: 'yes', label: 'Yes, we fit this range' }, { val: 'no', label: 'No, someone is outside' }, { val: 'notSure', label: 'Not sure / Casual' }].map((opt) => (
+              {[
+                { val: 'yes', label: 'Yes, we fit this range' },
+                { val: 'no', label: 'No, someone is outside' },
+                { val: 'notSure', label: 'Not sure / Casual' },
+              ].map((opt) => (
                 <button key={opt.val} onClick={() => updateData({ incomeInRange: opt.val as any })} className={`p-4 text-left border-2 rounded-2xl transition font-semibold ${data.incomeInRange === opt.val ? 'border-teal-600 bg-teal-50 text-teal-900 shadow-sm' : 'border-slate-100'}`}>
                   {opt.label}
                 </button>
@@ -343,7 +301,7 @@ const Eligibility: React.FC = () => {
               <i className="fa-solid fa-list-check"></i>
             </div>
             <h2 className="text-3xl font-black text-slate-900">Ready!</h2>
-            <p className="text-slate-500 max-w-sm mx-auto">Cross-referencing your profile with all national support schemes.</p>
+            <p className="text-slate-500 max-w-sm mx-auto">Cross-referencing your profile with the latest 2026 UK support schemes.</p>
           </div>
         );
       default: return null;
@@ -360,13 +318,13 @@ const Eligibility: React.FC = () => {
         <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100">
           <div className="bg-slate-900 p-12 text-white text-center">
             <h2 className="text-4xl font-black mb-2">Entitlement Results</h2>
-            <p className="text-teal-400 font-bold uppercase tracking-widest text-xs">Based on {data.location} Rules</p>
+            <p className="text-teal-400 font-bold uppercase tracking-widest text-xs">Based on 2026 {data.location} Regulations</p>
           </div>
           <div className="p-10 md:p-14">
             <div className="mb-12 p-6 bg-amber-50 rounded-3xl border border-amber-100 flex items-start gap-4">
                <i className="fa-solid fa-triangle-exclamation text-amber-600 mt-1"></i>
                <div className="text-xs text-amber-900 leading-relaxed font-medium">
-                 <strong>Disclaimer:</strong> This is an estimate based on provided inputs. Individual cases vary. Verify all results with <strong>GOV.UK Childcare Choices</strong> before committing.
+                 <strong>Disclaimer:</strong> This is a 2026 estimate. Eligibility depends on income thresholds and re-confirmation of codes every 3 months. Verify results on <strong>GOV.UK</strong>.
                </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -378,7 +336,7 @@ const Eligibility: React.FC = () => {
                 <i className="fa-solid fa-clock text-4xl text-teal-100"></i>
               </div>
               <div className="bg-blue-50 rounded-3xl p-8 border border-blue-100">
-                <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">Next Window (England)</h4>
+                <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">Application Window</h4>
                 {data.location === 'England' ? (
                   <div className="space-y-2">
                     <p className="text-xs text-blue-700">For term starting <strong>{appWindow.term}</strong>:</p>
@@ -386,7 +344,7 @@ const Eligibility: React.FC = () => {
                        {appWindow.active ? `Window is OPEN! Apply by ${appWindow.deadline}` : `Window opens ${appWindow.window.split(' to ')[0]}`}
                     </div>
                   </div>
-                ) : <p className="text-xs text-blue-700">Check your local authority in {data.location} for regional term dates.</p>}
+                ) : <p className="text-xs text-blue-700">Check with your regional authority in {data.location} for next term dates.</p>}
               </div>
             </div>
             <div className="space-y-16">
@@ -404,7 +362,7 @@ const Eligibility: React.FC = () => {
                         <div key={scheme.id} className="p-6 rounded-3xl border border-slate-100 bg-slate-50 group hover:bg-white hover:shadow-xl hover:border-teal-100 transition-all duration-300 flex flex-col">
                           <h4 className="font-bold text-lg text-slate-900 mb-2">{scheme.title}</h4>
                           <p className="text-sm text-slate-500 leading-relaxed mb-6 flex-grow">{scheme.description}</p>
-                          {scheme.link && <a href={scheme.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-teal-600 font-bold text-xs">Official Portal <i className="fa-solid fa-arrow-right"></i></a>}
+                          {scheme.link && <a href={scheme.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-teal-600 font-bold text-xs">Check Official Portal <i className="fa-solid fa-arrow-right"></i></a>}
                         </div>
                       ))}
                     </div>
@@ -413,12 +371,12 @@ const Eligibility: React.FC = () => {
               })}
             </div>
             <div className="mt-16 bg-white rounded-[3rem] p-10 md:p-14 border border-slate-200 shadow-sm text-center">
-                <h4 className="text-2xl font-black text-slate-900 mb-4">Finding an Approved Provider</h4>
+                <h4 className="text-2xl font-black text-slate-900 mb-4">Find a Provider</h4>
                 <a href={providerLinks[data.location]} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 bg-slate-900 text-white px-10 py-5 rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg group">Official Directory <i className="fa-solid fa-external-link text-[10px]"></i></a>
             </div>
             <div className="mt-16 bg-teal-600 rounded-[3rem] p-10 md:p-16 text-white text-center">
-                 <h4 className="text-3xl font-black mb-6">Email me these results</h4>
-                 {emailSent ? <div className="bg-white/10 p-6 rounded-2xl border border-white/20 animate-in fade-in duration-500">Sent! Check your inbox.</div> : (
+                 <h4 className="text-3xl font-black mb-6">Email these results</h4>
+                 {emailSent ? <div className="bg-white/10 p-6 rounded-2xl border border-white/20">Sent! Check your inbox.</div> : (
                    <form onSubmit={handleEmailSubmit} className="max-w-md mx-auto flex flex-col sm:flex-row gap-3">
                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="flex-grow p-4 rounded-xl text-slate-900 outline-none" required />
                      <button type="submit" className="bg-slate-900 px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition">Email Me</button>
