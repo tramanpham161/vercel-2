@@ -249,11 +249,11 @@ const Calculator: React.FC = () => {
 
           <div className="p-10 md:p-14">
              {/* Disclaimer */}
-             <div className="mb-12 p-6 bg-amber-50 rounded-3xl border border-amber-100 flex items-start gap-4">
+             <div className="mb-12 p-6 bg-amber-50 rounded-3xl border border-amber-100 flex items-start gap-4 text-xs">
                <i className="fa-solid fa-circle-info text-amber-600 mt-1"></i>
-               <p className="text-xs text-amber-900 leading-relaxed font-medium">
-                 <strong>Disclaimer:</strong> This calculation is an estimate based solely on the values you provided. Provider rates, regional supplements, and individual funding eligibility should be cross-checked with official government sources and your specific childcare setting.
-               </p>
+               <div className="text-amber-900 leading-relaxed">
+                 <strong>Cross-check Required:</strong> This estimate is based on the data provided. Rates and rules can vary by provider and region. Please verify with your chosen setting and official government tools.
+               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -278,11 +278,11 @@ const Calculator: React.FC = () => {
               <div className="bg-slate-900 rounded-[2rem] p-8 text-white">
                  <h4 className="font-bold text-xl mb-4">Email me this quote</h4>
                  {emailSent ? (
-                   <p className="text-teal-400 font-bold">Success! Sent.</p>
+                   <p className="text-teal-400 font-bold">Quote sent to your inbox!</p>
                  ) : (
                    <form onSubmit={handleEmailSubmit} className="space-y-4">
                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full p-4 rounded-xl text-slate-900 outline-none" required />
-                     <button type="submit" className="w-full bg-teal-600 py-4 rounded-xl font-bold hover:bg-teal-500 transition">Email My Quote</button>
+                     <button type="submit" className="w-full bg-teal-600 py-4 rounded-xl font-bold hover:bg-teal-500 transition">Email Quote</button>
                    </form>
                  )}
               </div>
@@ -316,7 +316,7 @@ const Calculator: React.FC = () => {
         <div className="mt-12 flex justify-between items-center pt-8 border-t border-slate-100">
           <button onClick={prevStep} disabled={step === 1} className={`font-bold transition-all px-6 py-3 rounded-xl ${step === 1 ? 'opacity-0' : 'text-slate-400'}`}>Back</button>
           <button onClick={step === totalSteps ? () => setIsSubmitted(true) : nextStep} className="bg-teal-600 text-white px-12 py-4 rounded-2xl font-bold shadow-xl">
-            {step === totalSteps ? 'See Costs' : 'Next'}
+            {step === totalSteps ? 'Calculate Costs' : 'Next'}
           </button>
         </div>
       </div>
