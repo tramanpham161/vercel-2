@@ -15,6 +15,8 @@ export const BENEFIT_OPTIONS = [
   'Income-related ESA',
   'Child Tax Credit',
   'Working Tax Credit',
+  'Pension Credit',
+  'Housing Benefit'
 ];
 
 export const PROVIDER_TYPES = [
@@ -25,12 +27,6 @@ export const PROVIDER_TYPES = [
   'Not sure'
 ];
 
-/**
- * Data Sources:
- * 1. Coram Family and Childcare Survey 2024/25
- * 2. DayNurseries.co.uk Advice & Costs Index
- * 3. Thrive Childcare Funding Policy Averages
- */
 export const CHILDCARE_DATA_2024 = {
   year: 2024,
   rates: {
@@ -60,10 +56,10 @@ export const CHILDCARE_DATA_2024 = {
 };
 
 export const Logo = () => (
-  <div className="flex items-center gap-2 font-bold text-teal-700 text-xl">
-    <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white">
+  <div className="flex items-center gap-2 font-bold text-teal-700 text-xl group">
+    <div className="w-9 h-9 bg-teal-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-teal-600/20 group-hover:rotate-6 transition-transform">
       <i className="fa-solid fa-child-reaching"></i>
     </div>
-    <span>Childcare Checker</span>
+    <span className="tracking-tight">Childcare<span className="text-slate-900">Checker</span></span>
   </div>
 );
