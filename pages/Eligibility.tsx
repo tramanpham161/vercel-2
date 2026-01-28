@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { EligibilityData, ChildAge, WorkStatus, Scheme, UKRegion } from '../types';
-import { BENEFIT_OPTIONS } from '../constants';
+import { BENEFIT_OPTIONS, OFFICIAL_LINKS } from '../constants';
 
 const Eligibility: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -23,9 +23,7 @@ const Eligibility: React.FC = () => {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // 2026 Estimated Threshold: ~£195/week (16 hours at National Living Wage)
   const MIN_EARNINGS_TEXT = "at least £195/week (approx. 16 hours at National Living Wage)";
-
   const totalSteps = 8;
 
   const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
@@ -40,7 +38,6 @@ const Eligibility: React.FC = () => {
     const month = NOW.getMonth();
     const date = NOW.getDate();
     
-    // Logic for 2026 intake periods
     if (month < 3 || (month === 3 && date <= 31)) {
       return { term: "1 April", window: `15 Jan to 31 Mar`, deadline: `31 Mar`, active: (month > 0 || (month === 0 && date >= 15)) };
     } else if (month < 8 || (month === 7 && date <= 31)) {
@@ -48,13 +45,6 @@ const Eligibility: React.FC = () => {
     } else {
       return { term: "1 January", window: `15 Oct to 31 Dec`, deadline: `31 Dec`, active: (month > 9 || (month === 9 && date >= 15)) };
     }
-  };
-
-  const providerLinks: Record<UKRegion, string> = {
-    'England': 'https://www.gov.uk/government/publications/childminder-agencies-list-of-agencies',
-    'Scotland': 'http://www.careinspectorate.com/',
-    'Wales': 'https://digital.careinspectorate.wales/directory/search',
-    'Northern Ireland': 'https://www.nidirect.gov.uk/articles/early-years-teams'
   };
 
   const results = useMemo(() => {
@@ -67,97 +57,113 @@ const Eligibility: React.FC = () => {
 
     if (data.location === 'England') {
       // 1. UNIVERSAL 15 HOURS (3-4y)
-      if (data.childAge === '3-4y') {
-        schemes.push({
-          id: 'eng-15h-univ',
-          title: '15 Hours Universal Funding',
-          category: 'Universal',
-          description: 'Standard funded childcare for all 3 and 4-year-olds.',
-          reason: 'Every child in England qualifies for 15 hours automatically from the term after their 3rd birthday.',
-          hours: 15,
-          type: 'funding',
-          link: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-and-education-for-2-to-4-year-olds'
-        });
+      const univ15Eligible = data.childAge === '3-4y';
+      schemes.push({
+        id: 'eng-15h-univ',
+        title: '15 Hours Universal Funding',
+        category: 'Universal',
+        description: 'Standard funded childcare for all 3 and 4-year-olds.',
+        hours: univ15Eligible ? 15 : 0,
+        type: 'funding',
+        reason: univ15Eligible 
+          ? 'Your child is in the correct age range (3-4 years old) to receive this automatically.' 
+          : data.childAge === '5plus' 
+            ? 'Not eligible because your child is school age.' 
+            : 'Not eligible yet; this starts from the term after your child turns 3.',
+        link: OFFICIAL_LINKS.schemes.eng15hUniversal
+      });
 
-        if (isWorkingEligible) {
-          schemes.push({
-            id: 'eng-30h-work',
-            title: 'Working Parent Top-up (+15h)',
-            category: 'Working Families',
-            description: 'An additional 15 hours for working families, totaling 30 hours.',
-            reason: `You qualify for the extra 15 hours because you (and your partner) earn ${MIN_EARNINGS_TEXT} and less than £100k/year.`,
-            hours: 15,
-            type: 'funding',
-            link: 'https://www.gov.uk/apply-30-hours-free-childcare'
-          });
-        }
-      } 
+      // 2. WORKING PARENT TOP-UP / EXPANSION (30h)
+      // Consolidating 30h logic for visibility
+      const ageFor30h = ['9m-2y', '2y', '3-4y'].includes(data.childAge);
+      const eligibleFor30h = ageFor30h && isWorkingEligible;
       
-      else if (['9m-2y', '2y'].includes(data.childAge) && isWorkingEligible) {
-        schemes.push({
-          id: 'eng-expansion-30h',
-          title: '30 Hours Working Parent Entitlement',
-          category: 'Working Families',
-          description: 'The full 30-hour expansion is now active for toddlers from 9 months old.',
-          reason: `As a working family earning ${MIN_EARNINGS_TEXT}, your child qualifies for the full 30 hours.`,
-          hours: 30,
-          type: 'funding',
-          link: 'https://www.gov.uk/free-childcare-if-working/apply-for-free-childcare-if-youre-working'
-        });
+      let reason30h = '';
+      if (eligibleFor30h) {
+        reason30h = `As a working family earning ${MIN_EARNINGS_TEXT}, you qualify for the full 30 hours.`;
+      } else if (!ageFor30h) {
+        reason30h = data.childAge === 'under9m' 
+          ? 'Child is under 9 months; you will qualify once they reach that age.' 
+          : 'Child is outside the eligible age range (9m to 4y).';
+      } else if (!isWorkingEligible) {
+        if (!incomeQualifies) reason30h = 'Household income is either below the minimum threshold or exceeds £100k.';
+        else reason30h = 'Both parents must be working (or on qualifying leave) to access the extra 15 hours.';
       }
 
-      if (data.childAge === '2y' && (onBenefits || data.childDisabled)) {
-        schemes.push({
-          id: 'eng-2y-support',
-          title: '15 Hours Support-based Funding',
-          category: 'Support-Based',
-          description: 'Specifically for 2-year-olds whose families require extra financial or health support.',
-          reason: `Your 2-year-old qualifies because ${onBenefits ? 'you receive qualifying benefits' : 'your child has an EHCP or receives DLA'}.`,
-          hours: 15,
-          type: 'funding',
-          link: 'https://www.gov.uk/help-with-childcare-costs/free-childcare-2-year-olds'
-        });
+      schemes.push({
+        id: 'eng-30h-work',
+        title: '30 Hours Working Parent Entitlement',
+        category: 'Working Families',
+        description: 'The full 30-hour support for working parents of children from 9 months to 4 years.',
+        hours: eligibleFor30h ? 30 : 0,
+        type: 'funding',
+        reason: reason30h,
+        link: OFFICIAL_LINKS.schemes.engExpansion
+      });
+
+      // 3. SUPPORT-BASED 15 HOURS (2y)
+      const isAge2 = data.childAge === '2y';
+      const eligible2ySupport = isAge2 && (onBenefits || data.childDisabled);
+      
+      let reason2ySupport = '';
+      if (eligible2ySupport) {
+        reason2ySupport = `Your 2-year-old qualifies because ${onBenefits ? 'you are receiving qualifying benefits' : 'your child has an EHCP or receives DLA'}.`;
+      } else if (!isAge2) {
+        reason2ySupport = 'This specific support scheme is only available for 2-year-olds.';
+      } else {
+        reason2ySupport = 'To qualify at age 2 without the working parent code, you must receive specific benefits or the child must have a disability.';
       }
 
-      if (data.childAge === 'under9m' && isWorkingEligible) {
-        schemes.push({
-          id: 'eng-future',
-          title: 'Future 30 Hours (Starts at 9m)',
-          category: 'Working Families',
-          description: 'You will qualify for 30 hours once your child reaches 9 months of age.',
-          reason: 'Your income meets the criteria, but funding for this age group starts at 9 months.',
-          hours: 0,
-          type: 'funding',
-          link: 'https://www.gov.uk/free-childcare-if-working/check-youre-eligible'
-        });
-      }
+      schemes.push({
+        id: 'eng-2y-support',
+        title: '15 Hours Support-based Funding',
+        category: 'Support-Based',
+        description: 'For 2-year-olds whose families require extra financial or health support.',
+        hours: eligible2ySupport ? 15 : 0,
+        type: 'funding',
+        reason: reason2ySupport,
+        link: OFFICIAL_LINKS.schemes.eng2hSupport
+      });
     }
 
-    if (data.location === 'Scotland' && (data.childAge === '3-4y' || (data.childAge === '2y' && (onBenefits || data.childDisabled)))) {
+    // SCOTLAND
+    if (data.location === 'Scotland') {
+      const scoEligible = data.childAge === '3-4y' || (data.childAge === '2y' && (onBenefits || data.childDisabled));
       schemes.push({
         id: 'sco-1140h',
         title: '1,140 Hours Funded Childcare',
         category: 'Universal',
         description: 'Scotland provides a universal 1,140 hours a year (approx 30h/week).',
-        reason: 'All 3 and 4-year-olds in Scotland qualify automatically.',
-        hours: 30,
+        hours: scoEligible ? 30 : 0,
         type: 'funding',
-        link: 'https://www.parentclub.scot/articles/funded-early-learning-and-childcare'
+        reason: scoEligible 
+          ? 'Your child qualifies based on their age and your residency in Scotland.' 
+          : 'In Scotland, universal funding begins at age 3, or age 2 for families meeting certain support criteria.',
+        link: OFFICIAL_LINKS.schemes.scotland1140
       });
     }
 
-    if (isWorkingEligible && data.childAge !== '5plus') {
-      schemes.push({
-        id: 'tfc',
-        title: 'Tax-Free Childcare (20% Savings)',
-        category: 'Financial',
-        description: 'The government adds £2 for every £8 you pay your provider.',
-        reason: 'Because you are working and earn under £100k, you can save up to £2,000 per child per year.',
-        hours: 0,
-        type: 'financial-support',
-        link: 'https://www.gov.uk/tax-free-childcare'
-      });
+    // TAX-FREE CHILDCARE (UK Wide)
+    const tfcEligible = isWorkingEligible && data.childAge !== '5plus';
+    let tfcReason = '';
+    if (tfcEligible) {
+      tfcReason = 'You qualify because you are working, earn under £100k, and have a child under 12.';
+    } else if (data.childAge === '5plus') {
+      tfcReason = 'While not listed for early years, Tax-Free Childcare actually continues until the child is 11.';
+    } else if (!isWorkingEligible) {
+      tfcReason = 'This scheme requires both parents to be working and earning between the minimum wage threshold and £100k.';
     }
+
+    schemes.push({
+      id: 'tfc',
+      title: 'Tax-Free Childcare (20% Savings)',
+      category: 'Financial',
+      description: 'The government adds £2 for every £8 you pay your provider.',
+      hours: 0,
+      type: 'financial-support',
+      reason: tfcReason,
+      link: OFFICIAL_LINKS.schemes.taxFreeChildcare
+    });
 
     return schemes;
   }, [data]);
@@ -330,7 +336,7 @@ const Eligibility: React.FC = () => {
               <div className="bg-blue-50 rounded-3xl p-8 border border-blue-100">
                 <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">When to Apply</h4>
                 <div className="space-y-2">
-                  <p className="text-xs text-blue-700">Next Term: <strong>{appWindow.term}</strong></p>
+                  <p className="text-xs text-blue-700">Next Intake: <strong>{appWindow.term}</strong></p>
                   <div className={`bg-white p-3 rounded-xl border border-blue-100 font-black text-sm ${appWindow.active ? 'text-teal-700' : 'text-slate-400'}`}>
                      {appWindow.active ? `Apply by ${appWindow.deadline}` : `Opens ${appWindow.window.split(' to ')[0]}`}
                   </div>
@@ -338,7 +344,7 @@ const Eligibility: React.FC = () => {
               </div>
             </div>
 
-            {/* SIMPLE APPLICATION TABLE */}
+            {/* APPLICATION DEADLINE TABLE */}
             <div className="mb-16 bg-slate-50 rounded-[2rem] border border-slate-200 overflow-hidden">
                <div className="px-8 py-5 border-b bg-white/50">
                   <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
@@ -391,7 +397,12 @@ const Eligibility: React.FC = () => {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {catSchemes.map((scheme) => (
-                        <div key={scheme.id} className="p-8 rounded-[2rem] border border-slate-100 bg-white flex flex-col hover:shadow-xl transition-all duration-300 relative overflow-hidden h-full">
+                        <div key={scheme.id} className={`p-8 rounded-[2rem] border flex flex-col hover:shadow-xl transition-all duration-300 relative overflow-hidden h-full ${scheme.hours > 0 ? 'border-slate-100 bg-white' : 'border-slate-200 bg-slate-50 opacity-80'}`}>
+                          {scheme.hours === 0 && (
+                            <div className="absolute top-4 right-4 z-20">
+                              <span className="bg-slate-200 text-slate-600 text-[8px] font-bold px-2 py-1 rounded uppercase tracking-wider">Ineligible</span>
+                            </div>
+                          )}
                           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 -mr-16 -mt-16 rounded-full opacity-50"></div>
                           <div className="relative flex flex-col h-full">
                             <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider mb-2 w-fit ${
@@ -404,12 +415,12 @@ const Eligibility: React.FC = () => {
                             <h4 className="font-bold text-xl text-slate-900 mb-3">{scheme.title}</h4>
                             <p className="text-sm text-slate-500 leading-relaxed mb-6">{scheme.description}</p>
                             
-                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8 flex-grow">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Why you qualify</span>
+                            <div className={`p-5 rounded-2xl border mb-8 flex-grow ${scheme.hours > 0 ? 'bg-slate-50 border-slate-100' : 'bg-white/50 border-slate-200'}`}>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Why this status?</span>
                               <p className="text-xs text-slate-700 font-medium leading-relaxed italic">"{scheme.reason}"</p>
                             </div>
 
-                            {scheme.link && (
+                            {scheme.link && scheme.hours > 0 && (
                               <div className="mt-auto">
                                 <a 
                                   href={scheme.link} 
@@ -438,7 +449,7 @@ const Eligibility: React.FC = () => {
             <div className="mt-20 bg-slate-50 rounded-[3rem] p-10 md:p-14 text-center border border-slate-100">
                 <h4 className="text-2xl font-black text-slate-900 mb-4">Finding a registered provider</h4>
                 <p className="text-sm text-slate-500 mb-8 max-w-xl mx-auto">Funding only applies to "approved" providers. Use the official {data.location} directory to find nurseries and childminders in your area.</p>
-                <a href={providerLinks[data.location]} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 bg-slate-900 text-white px-10 py-5 rounded-2xl font-bold hover:bg-teal-600 transition shadow-lg">
+                <a href={OFFICIAL_LINKS.directories[data.location]} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 bg-slate-900 text-white px-10 py-5 rounded-2xl font-bold hover:bg-teal-600 transition shadow-lg">
                   Browse {data.location} Providers <i className="fa-solid fa-external-link text-[10px]"></i>
                 </a>
             </div>
