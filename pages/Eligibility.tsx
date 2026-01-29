@@ -33,14 +33,13 @@ const Eligibility: React.FC = () => {
   const getIntakeDetails = () => {
     const NOW = new Date();
     const month = NOW.getMonth();
-    const date = NOW.getDate();
     
-    if (month < 3 || (month === 3 && date <= 31)) {
-      return { term: "April", deadline: "31 March", active: (month > 0 || (month === 0 && date >= 15)) };
-    } else if (month < 8 || (month === 7 && date <= 31)) {
-      return { term: "September", deadline: "31 August", active: (month > 4 || (month === 4 && date >= 12)) };
-    } else {
-      return { term: "January", deadline: "31 December", active: (month > 9 || (month === 9 && date >= 15)) };
+    if (month < 3) { // Jan-Mar
+      return { term: "April", deadline: "31 March", active: true };
+    } else if (month < 8) { // Apr-Aug
+      return { term: "September", deadline: "31 August", active: true };
+    } else { // Sep-Dec
+      return { term: "January", deadline: "31 December", active: true };
     }
   };
 
@@ -54,7 +53,6 @@ const Eligibility: React.FC = () => {
 
     // --- ENGLAND ---
     if (data.location === 'England') {
-      // 1. Universal 15h
       const age34 = data.childAge === '3-4y';
       list.push({
         id: 'eng-15h-univ',
@@ -64,67 +62,55 @@ const Eligibility: React.FC = () => {
         hours: age34 ? 15 : 0,
         type: 'funding',
         reason: age34 
-          ? "All children in England are eligible for 15 hours from the term after their 3rd birthday." 
-          : "Your child is outside the 3-4 year age range required for universal funding.",
+          ? "Your child is in the 3-4 year age range, qualifying them automatically for 15 hours." 
+          : "This universal support only applies to children aged 3 or 4.",
         link: OFFICIAL_LINKS.schemes.eng15hUniversal
       });
 
-      // 2. Working Parent Entitlement (up to 30h)
       const eligibleAgeRange = ['9m-2y', '2y', '3-4y'].includes(data.childAge);
       const qualifies30h = eligibleAgeRange && workingFamiliesEligible;
-      let reason30h = "";
-      if (qualifies30h) {
-        reason30h = `As a working family with a child aged 9m+, you qualify for 30 hours total (or an extra 15h top-up if aged 3-4).`;
-      } else if (!eligibleAgeRange) {
-        reason30h = data.childAge === 'under9m' ? "Entitlement for working parents begins once the child is 9 months old." : "Child is school age or outside the eligibility window.";
-      } else {
-        reason30h = "To qualify, both parents must earn at least 16h/week at NLW and less than £100k net income.";
-      }
-
       list.push({
         id: 'eng-30h-work',
-        title: 'Working Parent Entitlement',
+        title: 'Working Parent Entitlement (Up to 30h)',
         category: 'Working Families',
-        description: 'The expanded 30-hour support for working parents of children from 9 months to 4 years.',
+        description: '30-hour support for working parents of children from 9 months to 4 years.',
         hours: qualifies30h ? 30 : 0,
         type: 'funding',
-        reason: reason30h,
+        reason: qualifies30h 
+          ? "You qualify for 30 hours because both parents are working and your child is aged 9m+." 
+          : !eligibleAgeRange ? "Your child is not in the 9m-4y age window for this expansion." : "Requires both parents to be working and earning within the required thresholds.",
         link: OFFICIAL_LINKS.schemes.engExpansion
       });
 
-      // 3. Support-Based 15h (Age 2)
       const age2 = data.childAge === '2y';
       const qualifiesSupport = age2 && (hasBenefits || data.childDisabled);
       list.push({
         id: 'eng-2y-support',
         title: 'Support-based 15 Hours (Age 2)',
         category: 'Support-Based',
-        description: 'Targeted support for 2-year-olds in families on benefits or with health needs.',
+        description: 'Targeted support for 2-year-olds in families on benefits.',
         hours: qualifiesSupport ? 15 : 0,
         type: 'funding',
         reason: qualifiesSupport 
-          ? "Qualifies because your child is 2 and you receive qualifying benefits or disability support." 
-          : "Only for 2-year-olds whose families meet specific income or health criteria.",
+          ? "Qualifies due to age 2 and receipt of qualifying benefits or disability support." 
+          : "Only for 2-year-olds in households receiving specific support benefits.",
         link: OFFICIAL_LINKS.schemes.eng2hSupport
       });
     }
 
     // --- SCOTLAND ---
     else if (data.location === 'Scotland') {
-      const scoAge34 = data.childAge === '3-4y';
-      const scoAge2Eligible = data.childAge === '2y' && (hasBenefits || data.childDisabled);
-      const qualifiesSco = scoAge34 || scoAge2Eligible;
-
+      const scoAgeEligible = data.childAge === '3-4y' || (data.childAge === '2y' && (hasBenefits || data.childDisabled));
       list.push({
         id: 'sco-1140h',
         title: '1,140 Hours Funded Childcare',
         category: 'Universal',
-        description: 'Scotland provides 1,140 hours per year (approx 30h/week) for all 3-4y and eligible 2y.',
-        hours: qualifiesSco ? 30 : 0,
+        description: '1,140 hours per year for all 3-4y and eligible 2y in Scotland.',
+        hours: scoAgeEligible ? 30 : 0,
         type: 'funding',
-        reason: qualifiesSco 
-          ? "In Scotland, all 3-4 year olds (and eligible 2 year olds) get a flat 1,140 hours per year." 
-          : "This universal entitlement begins at age 3, or age 2 for families meeting support criteria.",
+        reason: scoAgeEligible 
+          ? "Resident in Scotland with an eligible child age (3-4y or supported 2y)." 
+          : "In Scotland, 1140h starts at age 3 unless meeting specific support criteria at age 2.",
         link: OFFICIAL_LINKS.schemes.scotland1140
       });
     }
@@ -136,12 +122,12 @@ const Eligibility: React.FC = () => {
         id: 'wal-offer',
         title: 'Childcare Offer for Wales',
         category: 'Working Families',
-        description: 'Up to 30 hours of combined early education and childcare for 3-4 year olds.',
+        description: '30 hours of combined education and childcare for 3-4 year olds.',
         hours: walesOfferEligible ? 30 : 0,
         type: 'funding',
         reason: walesOfferEligible 
-          ? "Working parents in Wales can access 30 hours of combined support for children aged 3 and 4." 
-          : "Requires both parents working and a child in the 3-4 year age range.",
+          ? "Working parents of 3-4 year olds in Wales qualify for this combined entitlement." 
+          : "Requires both parents working and a child aged 3 or 4.",
         link: OFFICIAL_LINKS.schemes.walesOffer
       });
 
@@ -150,12 +136,12 @@ const Eligibility: React.FC = () => {
         id: 'wal-fs',
         title: 'Flying Start (Age 2)',
         category: 'Support-Based',
-        description: '12.5 hours of funded childcare for eligible 2-year-olds in Wales.',
+        description: '12.5 hours of funded childcare for eligible 2-year-olds in Flying Start areas.',
         hours: flyingStartEligible ? 12.5 : 0,
         type: 'funding',
         reason: flyingStartEligible 
-          ? "Your child is 2 and meets the criteria for Flying Start support." 
-          : "Typically requires living in a Flying Start postcode or meeting specific support needs.",
+          ? "Available to eligible 2-year-olds in Flying Start areas of Wales." 
+          : "Typically requires living in a target Flying Start postcode or meeting specific support needs.",
         link: OFFICIAL_LINKS.schemes.walesFlyingStart
       });
     }
@@ -167,25 +153,26 @@ const Eligibility: React.FC = () => {
         id: 'ni-preschool',
         title: 'Pre-School Education Programme',
         category: 'Universal',
-        description: 'At least 12.5 hours of funded pre-school education in the year before primary school.',
+        description: '12.5 to 22.5 hours of funded pre-school education in NI.',
         hours: niPreEligible ? 12.5 : 0,
         type: 'funding',
         reason: niPreEligible 
-          ? "Universal support for children in NI in their immediate pre-school year." 
-          : "Only applies to children aged 3 or 4 in the year before they start primary school.",
+          ? "Universal support for children in NI in their final pre-school year." 
+          : "Only for children in their immediate pre-school year (age 3-4).",
         link: OFFICIAL_LINKS.schemes.niPreschool
       });
 
+      const niSubsidyEligible = workingFamiliesEligible && data.childAge !== '5plus';
       list.push({
         id: 'ni-nics',
         title: 'NI Childcare Subsidy (NICS)',
         category: 'Financial',
-        description: 'A new 15% reduction in childcare costs for working parents of children under school age.',
+        description: 'A 15% cost reduction for working parents of children under school age.',
         hours: 0,
         type: 'financial-support',
-        reason: workingFamiliesEligible && data.childAge !== '5plus' 
-          ? "Working parents in NI are now eligible for a 15% subsidy on childcare costs." 
-          : "Requires working parent status and a child below primary school age.",
+        reason: niSubsidyEligible 
+          ? "As a working family in NI, you qualify for a 15% reduction in childcare costs." 
+          : "Requires both parents working and a child below primary school age.",
         link: OFFICIAL_LINKS.schemes.niSubsidy
       });
     }
@@ -196,12 +183,12 @@ const Eligibility: React.FC = () => {
       id: 'tfc',
       title: 'Tax-Free Childcare (UK Wide)',
       category: 'Financial',
-      description: 'The government adds £2 for every £8 you pay into your account, up to £2,000/year.',
+      description: 'Government top-up: £2 for every £8 you pay, up to £2,000/year.',
       hours: 0,
       type: 'financial-support',
       reason: tfcEligible 
-        ? "Because you work and earn under £100k, you qualify for this 20% cost reduction." 
-        : "Both parents must work, earn at least 16h/week, and have a child under 12.",
+        ? "Working families earning under £100k qualify for this 20% government top-up." 
+        : "Requires both parents to be working at least 16h/week and earning under £100k.",
       link: OFFICIAL_LINKS.schemes.taxFreeChildcare
     });
 
@@ -270,7 +257,7 @@ const Eligibility: React.FC = () => {
                 <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Partner's status</label>
                 <div className="grid grid-cols-2 gap-2">
                   {['working', 'on-leave', 'unable-to-work', 'not-working'].map(id => (
-                    <button key={id} onClick={() => updateData({ partnerWorkStatus: id as WorkStatus })} className={`p-4 text-xs font-bold border-2 rounded-xl transition ${data.partnerWorkStatus === id ? 'border-teal-600 bg-teal-700 bg-teal-50 text-teal-700' : 'border-slate-100 text-slate-400'}`}>
+                    <button key={id} onClick={() => updateData({ partnerWorkStatus: id as WorkStatus })} className={`p-4 text-xs font-bold border-2 rounded-xl transition ${data.partnerWorkStatus === id ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-slate-100 text-slate-400'}`}>
                       {id.replace('-', ' ').toUpperCase()}
                     </button>
                   ))}
@@ -325,8 +312,8 @@ const Eligibility: React.FC = () => {
       case 8: return (
         <div className="space-y-6 text-center py-10">
           <div className="w-20 h-20 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl"><i className="fa-solid fa-list-check"></i></div>
-          <h2 className="text-3xl font-black text-slate-900">Finalizing...</h2>
-          <p className="text-slate-500 max-w-sm mx-auto">Cross-referencing your profile with 2024/25 UK regional rules.</p>
+          <h2 className="text-3xl font-black text-slate-900">Generating Results...</h2>
+          <p className="text-slate-500 max-w-sm mx-auto">Calculating your entitlements based on regional 2024/25 legislation.</p>
         </div>
       );
       default: return null;
@@ -355,10 +342,45 @@ const Eligibility: React.FC = () => {
                 <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">Next Intake</h4>
                 <div className="space-y-2">
                   <p className="text-xs text-blue-700">Intake Term: <strong>{intake.term}</strong></p>
-                  <div className={`bg-white p-3 rounded-xl border border-blue-100 font-black text-sm ${intake.active ? 'text-teal-700' : 'text-slate-400'}`}>
-                    {intake.active ? `Apply by ${intake.deadline}` : "Application Window Closed"}
+                  <div className="bg-white p-3 rounded-xl border border-blue-100 font-black text-sm text-teal-700">
+                    Apply by {intake.deadline}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* APPLICATION DATES TABLE */}
+            <div className="mb-12 bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+              <div className="px-6 py-4 bg-slate-100 border-b border-slate-200">
+                <h4 className="font-bold text-slate-800 text-sm">When to apply for funded childcare (England)</h4>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-200/50 text-slate-500 uppercase tracking-tighter font-bold">
+                      <th className="px-6 py-3">Child's birthday</th>
+                      <th className="px-6 py-3">When they can start</th>
+                      <th className="px-6 py-3">Recommended apply date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    <tr>
+                      <td className="px-6 py-4">1 Jan to 31 March</td>
+                      <td className="px-6 py-4 font-semibold text-slate-900">Term starting in April</td>
+                      <td className="px-6 py-4">15 Jan to 31 March</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4">1 April to 31 Aug</td>
+                      <td className="px-6 py-4 font-semibold text-slate-900">Term starting in Sept</td>
+                      <td className="px-6 py-4">12 May to 31 August</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4">1 Sept to 31 Dec</td>
+                      <td className="px-6 py-4 font-semibold text-slate-900">Term starting in Jan</td>
+                      <td className="px-6 py-4">15 Oct to 31 December</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -373,20 +395,23 @@ const Eligibility: React.FC = () => {
                       {catType === 'funding' ? 'Funded Childcare Hours' : 'Financial Support'}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {catSchemes.map(scheme => (
-                        <div key={scheme.id} className={`p-8 rounded-[2rem] border flex flex-col hover:shadow-xl transition-all h-full ${scheme.hours > 0 || (scheme.type === 'financial-support' && !scheme.reason.toLowerCase().includes('ineligible')) ? 'bg-white border-slate-100' : 'bg-slate-50 border-slate-200 grayscale opacity-80'}`}>
-                          <div className="flex-grow">
-                            <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-bold uppercase mb-2 ${scheme.category === 'Universal' ? 'bg-blue-100 text-blue-700' : 'bg-teal-100 text-teal-700'}`}>{scheme.category}</span>
-                            <h4 className="font-bold text-xl text-slate-900 mb-2">{scheme.title}</h4>
-                            {scheme.hours > 0 && <span className="text-2xl font-black text-teal-600 block mb-4">{scheme.hours} Hours</span>}
-                            <p className="text-sm text-slate-500 mb-6 leading-relaxed">{scheme.description}</p>
-                            <div className="bg-slate-100/50 p-4 rounded-xl border border-slate-100 mb-6 italic text-xs text-slate-600 font-medium">"{scheme.reason}"</div>
+                      {catSchemes.map(scheme => {
+                        const isEligible = scheme.type === 'funding' ? scheme.hours > 0 : !scheme.reason.toLowerCase().includes('ineligible') && !scheme.reason.toLowerCase().includes('requires');
+                        return (
+                          <div key={scheme.id} className={`p-8 rounded-[2rem] border flex flex-col hover:shadow-xl transition-all h-full ${isEligible ? 'bg-white border-slate-100' : 'bg-slate-50 border-slate-200 grayscale opacity-80'}`}>
+                            <div className="flex-grow">
+                              <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-bold uppercase mb-2 ${scheme.category === 'Universal' ? 'bg-blue-100 text-blue-700' : 'bg-teal-100 text-teal-700'}`}>{scheme.category}</span>
+                              <h4 className="font-bold text-xl text-slate-900 mb-2">{scheme.title}</h4>
+                              {scheme.hours > 0 && <span className="text-2xl font-black text-teal-600 block mb-4">{scheme.hours} Hours</span>}
+                              <p className="text-sm text-slate-500 mb-6 leading-relaxed">{scheme.description}</p>
+                              <div className="bg-slate-100/50 p-4 rounded-xl border border-slate-100 mb-6 italic text-xs text-slate-600 font-medium">"{scheme.reason}"</div>
+                            </div>
+                            {scheme.link && isEligible && (
+                              <a href={scheme.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 w-full py-4 bg-teal-600 text-white rounded-xl font-bold text-sm hover:bg-teal-700 shadow-lg">Apply Now <i className="fa-solid fa-arrow-right text-[10px]"></i></a>
+                            )}
                           </div>
-                          {scheme.link && (scheme.hours > 0 || (scheme.type === 'financial-support' && !scheme.reason.toLowerCase().includes('ineligible'))) && (
-                            <a href={scheme.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 w-full py-4 bg-teal-600 text-white rounded-xl font-bold text-sm hover:bg-teal-700 shadow-lg">Apply Now <i className="fa-solid fa-arrow-right text-[10px]"></i></a>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
