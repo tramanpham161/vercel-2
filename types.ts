@@ -31,7 +31,7 @@ export interface ExtraCost {
   description: string;
 }
 
-export type FundingType = 'none' | '15h' | '30h';
+export type FundingType = 'none' | '15h' | '30h' | 'scot-wales-30h';
 
 export interface CalculatorData {
   hoursPerWeek: number;
@@ -45,6 +45,8 @@ export interface CalculatorData {
   extraCosts: ExtraCost[];
   fundingType: FundingType;
   includeTaxFreeChildcare: boolean;
+  includeUniversalCredit: boolean;
+  includeStudentGrant: boolean;
 }
 
 export interface Scheme {
