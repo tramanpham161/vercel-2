@@ -2,7 +2,6 @@
 import React, { useState, useMemo } from 'react';
 import { CalculatorData, FundingType } from '../types';
 import { PROVIDER_TYPES, CHILDCARE_DATA_2024 } from '../constants';
-import { GoogleGenAI } from "@google/genai";
 
 // Nuuri-style Info Tooltip
 const InfoTooltip: React.FC<{ text: string }> = ({ text }) => {
@@ -29,9 +28,6 @@ const InfoTooltip: React.FC<{ text: string }> = ({ text }) => {
 };
 
 const Calculator: React.FC = () => {
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<{ text: string; sources: any[] } | null>(null);
-
   const [data, setData] = useState<CalculatorData>({
     hoursPerWeek: 30,
     daysPerWeek: 3,
@@ -84,7 +80,7 @@ const Calculator: React.FC = () => {
       const fundedLimit = (data.fundingType === '30h' || data.fundingType === 'scot-wales-30h') ? 30 : 15;
       const hoursToFund = Math.min(data.hoursPerWeek, fundedLimit);
       const effectiveHourly = data.rateType === 'hourly' ? rate : (rate / (data.hoursPerWeek / data.daysPerWeek));
-      // Funded hours are typically 38 weeks. Stretch over 51 if chosen.
+      // Funded hours are typically 38 weeks per year.
       weeklyFundingCredit = (hoursToFund * effectiveHourly * 38) / data.weeksPerYear;
     }
 
@@ -95,16 +91,18 @@ const Calculator: React.FC = () => {
     let govSaving = weeklyFundingCredit;
     let finalPayable = totalBillWithExtras;
 
-    // UC and TFC are mutually exclusive. Student Grant can be additional or distinct.
+    // Logic: Universal Credit, Student Grant, and Tax-Free are generally mutually exclusive for childcare.
     if (data.includeUniversalCredit) {
       const ucSaving = totalBillWithExtras * 0.85;
       govSaving += ucSaving;
       finalPayable -= ucSaving;
     } else if (data.includeStudentGrant) {
-      const grantSaving = Math.min(totalBillWithExtras * 0.85, 199.62); // Cap based on 2026 guidelines
+      // 85% of costs, capped at £199.62 per week for 1 child
+      const grantSaving = Math.min(totalBillWithExtras * 0.85, 199.62);
       govSaving += grantSaving;
       finalPayable -= grantSaving;
     } else if (data.includeTaxFreeChildcare) {
+      // 20% savings up to £2,000/year (£38.46/week)
       const tfcSaving = Math.min(finalPayable * 0.20, 2000 / 52);
       govSaving += tfcSaving;
       finalPayable -= tfcSaving;
@@ -122,38 +120,19 @@ const Calculator: React.FC = () => {
     };
   }, [data, isLondon]);
 
-  const fetchRealtimeRate = async () => {
-    if (!data.postcode) {
-      alert("Please enter a postcode prefix (e.g., SW11)");
-      return;
-    }
-    setIsSearching(true);
-    setSearchResult(null);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Average hourly nursery rate in ${data.postcode} for 2026. Return a clear numerical average.`,
-        config: { tools: [{ googleSearch: {} }] },
-      });
-      const text = response.text || "No live data.";
-      setSearchResult({ text, sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks?.filter(c => c.web).map(c => ({ uri: c.web?.uri, title: c.web?.title })) || [] });
-      const match = text.match(/£?(\d+\.\d{2})/);
-      if (match) setData(prev => ({ ...prev, useCustomRate: true, customRateValue: parseFloat(match[1]) }));
-    } catch (e) {
-      console.error(e);
-      setSearchResult({ text: "Could not fetch local rates.", sources: [] });
-    } finally { setIsSearching(false); }
-  };
-
   const updateData = (updates: Partial<CalculatorData>) => setData(prev => ({ ...prev, ...updates }));
+  const updateExtra = (idx: number, updates: Partial<any>) => {
+    const newExtras = [...data.extraCosts];
+    newExtras[idx] = { ...newExtras[idx], ...updates };
+    setData(prev => ({ ...prev, extraCosts: newExtras }));
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 lg:py-20">
       <div className="mb-12 text-center lg:text-left">
         <h1 className="text-4xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tighter">Childcare Cost Calculator</h1>
         <p className="text-slate-500 text-xl max-w-2xl font-medium leading-relaxed">
-          Integrated with the full 2026 government expansion and live regional rate intelligence.
+          See your true monthly outgoings with the full 2026 funding rollout.
         </p>
       </div>
 
@@ -164,28 +143,21 @@ const Calculator: React.FC = () => {
           <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-sm">
             <h3 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
               <i className="fa-solid fa-map-location-dot text-teal-600"></i>
-              Attendance & Providers
+              Attendance & Location
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-8">
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Postcode Prefix</label>
-                  <div className="relative group flex gap-2">
-                    <input 
-                      type="text" placeholder="e.g. SW11" value={data.postcode} 
-                      onChange={(e) => updateData({ postcode: e.target.value.toUpperCase() })}
-                      className="flex-grow p-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] focus:border-teal-600 transition outline-none font-bold text-lg"
-                    />
-                    <button 
-                      onClick={fetchRealtimeRate} disabled={isSearching}
-                      className="bg-slate-900 text-white w-14 h-14 rounded-2xl hover:bg-teal-600 transition flex items-center justify-center shadow-lg shrink-0"
-                    >
-                      {isSearching ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles"></i>}
-                    </button>
-                  </div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Postcode Area</label>
+                  <input 
+                    type="text" placeholder="e.g. SW11" value={data.postcode} 
+                    onChange={(e) => updateData({ postcode: e.target.value.toUpperCase() })}
+                    className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] focus:border-teal-600 transition outline-none font-bold text-lg"
+                  />
+                  {isLondon && <p className="text-[10px] text-teal-600 font-bold mt-3 uppercase tracking-wider">London regional average applied</p>}
                 </div>
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Weekly Hours</label>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Hours Per Week</label>
                   <div className="flex items-center gap-6">
                     <input 
                       type="range" min="1" max="60" value={data.hoursPerWeek} 
@@ -208,7 +180,7 @@ const Calculator: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Estimated Hourly Rate</label>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block">Hourly Rate (£)</label>
                   <div className="relative">
                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl">£</span>
                     <input 
@@ -221,55 +193,49 @@ const Calculator: React.FC = () => {
                 </div>
               </div>
             </div>
-            {searchResult && (
-              <div className="mt-8 p-6 bg-teal-50 border border-teal-100 rounded-[2rem] text-sm text-teal-900 animate-in fade-in">
-                <p className="font-bold mb-2">Gemini Live Analysis:</p>
-                <p>{searchResult.text}</p>
-              </div>
-            )}
           </div>
 
           {/* Key Childcare Funding Options for 2026 */}
           <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-sm">
             <h3 className="text-2xl font-black text-slate-900 mb-2">What funding assistance are you eligible for?</h3>
-            <p className="text-sm text-slate-400 mb-10 font-medium">Updated 2026 eligibility criteria for UK households.</p>
+            <p className="text-sm text-slate-400 mb-10 font-medium">Select the schemes you qualify for based on the latest 2026 rules.</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {[
                 { 
-                  id: '30h', title: '30 Hours Free Childcare', subtitle: 'England: Ages 9m - 4y', 
-                  desc: 'Eligible working parents can access 30 hours per week (1,140 hours a year).',
+                  id: '30h', title: '30 Hours Free Childcare (England)', subtitle: 'Working Parents (9m - 4y)', 
+                  desc: 'Eligible working parents of children aged 9 months to 4 years can access 30 hours per week (1,140 hours a year).',
                   isSelected: data.fundingType === '30h',
                   onToggle: () => updateData({ fundingType: data.fundingType === '30h' ? 'none' : '30h' })
                 },
                 { 
-                  id: 'tax_free', title: 'Tax-Free Childcare', subtitle: 'UK Wide Top-Up', 
-                  desc: 'Government tops up £8 with £2, up to £2,000/year per child. Cannot be used with UC.',
-                  isSelected: data.includeTaxFreeChildcare && !data.includeUniversalCredit,
-                  onToggle: () => updateData({ includeTaxFreeChildcare: !data.includeTaxFreeChildcare, includeUniversalCredit: false })
+                  id: 'tax_free', title: 'Tax-Free Childcare', subtitle: 'Government Top-Up', 
+                  desc: 'Government tops up £8 with £2, up to £500 per child every 3 months (£2,000/year).',
+                  isSelected: data.includeTaxFreeChildcare && !data.includeUniversalCredit && !data.includeStudentGrant,
+                  onToggle: () => updateData({ includeTaxFreeChildcare: !data.includeTaxFreeChildcare, includeUniversalCredit: false, includeStudentGrant: false })
                 },
                 { 
-                  id: 'uc', title: 'Universal Credit Childcare', subtitle: 'Up to 85% claim back', 
-                  desc: 'Working parents can claim back 85% of costs. Caps have risen for 2026.',
+                  id: 'uc', title: 'Universal Credit', subtitle: 'Support for Families', 
+                  desc: 'Eligible parents can claim back up to 85% of eligible childcare costs, with caps expected to rise.',
                   isSelected: data.includeUniversalCredit,
-                  onToggle: () => updateData({ includeUniversalCredit: !data.includeUniversalCredit, includeTaxFreeChildcare: false })
+                  onToggle: () => updateData({ includeUniversalCredit: !data.includeUniversalCredit, includeTaxFreeChildcare: false, includeStudentGrant: false })
                 },
                 { 
-                  id: 'grant', title: 'Childcare Grant (Students)', subtitle: 'Full-time Higher Ed', 
-                  desc: 'Receive up to 85% of costs, max £199.62/wk for one child or £342.24/wk for two+.',
+                  id: 'grant', title: 'Childcare Grant (Students)', subtitle: 'Higher Education Support', 
+                  desc: 'Full-time higher education students may receive 85% of costs, up to £199.62/week for one child, or £342.24/week for two or more.',
                   isSelected: data.includeStudentGrant,
-                  onToggle: () => updateData({ includeStudentGrant: !data.includeStudentGrant })
+                  onToggle: () => updateData({ includeStudentGrant: !data.includeStudentGrant, includeTaxFreeChildcare: false, includeUniversalCredit: false })
                 },
                 { 
                   id: 'scot_wales', title: 'Support in Scotland & Wales', subtitle: 'Regional 30h Schemes', 
-                  desc: 'Scotland: 30h for 3-4y & eligible 2y. Wales: 30h for 3-4y working parents.',
+                  desc: 'Scotland: 30 hours for 3-4 year olds and eligible 2 year olds. Wales: 30 hours (combined education and childcare) for 3-4 year olds of working parents.',
                   isSelected: data.fundingType === 'scot-wales-30h',
                   onToggle: () => updateData({ fundingType: data.fundingType === 'scot-wales-30h' ? 'none' : 'scot-wales-30h' })
                 }
               ].map((scheme) => (
                 <div 
                   key={scheme.id} onClick={scheme.onToggle}
-                  className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer flex flex-col justify-between min-h-[160px] ${scheme.isSelected ? 'border-teal-600 bg-teal-50/30' : 'border-slate-50 bg-slate-50 hover:border-slate-200'}`}
+                  className={`p-7 rounded-[2.5rem] border-2 transition-all cursor-pointer flex flex-col justify-between min-h-[170px] ${scheme.isSelected ? 'border-teal-600 bg-teal-50/30' : 'border-slate-50 bg-slate-50 hover:border-slate-200'}`}
                 >
                   <div className="flex items-start">
                     <div className="space-y-1">
@@ -279,41 +245,91 @@ const Calculator: React.FC = () => {
                     <InfoTooltip text={scheme.desc} />
                   </div>
                   <div className="flex justify-end mt-4">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${scheme.isSelected ? 'bg-teal-600 border-teal-600 shadow-lg shadow-teal-600/20' : 'bg-white border-slate-200'}`}>
-                      {scheme.isSelected && <i className="fa-solid fa-check text-white text-[10px]"></i>}
+                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${scheme.isSelected ? 'bg-teal-600 border-teal-600' : 'bg-white border-slate-200'}`}>
+                      {scheme.isSelected && <i className="fa-solid fa-check text-white text-[11px]"></i>}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* Additional Fees */}
+          <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-sm">
+             <h3 className="text-2xl font-bold text-slate-900 mb-10 flex items-center gap-3">
+              <i className="fa-solid fa-plus-circle text-teal-600"></i>
+              Additional Costs
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {data.extraCosts.map((item, idx) => (
+                <div 
+                  key={item.name} 
+                  className={`p-6 rounded-[2rem] border-2 transition-all cursor-pointer ${item.enabled ? 'border-teal-600 bg-white ring-4 ring-teal-50' : 'border-slate-50 bg-slate-50 hover:border-slate-100'}`}
+                  onClick={() => updateExtra(idx, { enabled: !item.enabled })}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                       <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${item.enabled ? 'bg-teal-600 border-teal-600' : 'bg-white border-slate-200'}`}>
+                         {item.enabled && <i className="fa-solid fa-check text-white text-[10px]"></i>}
+                       </div>
+                       <span className="font-bold text-slate-900 text-sm">{item.name}</span>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{item.unit === 'perDay' ? 'Daily' : 'Weekly'}</span>
+                  </div>
+                  {item.enabled && (
+                    <div className="animate-in fade-in slide-in-from-top-1" onClick={(e) => e.stopPropagation()}>
+                       <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold">£</span>
+                        <input 
+                          type="number" step="0.50" value={item.price || ''}
+                          placeholder={item.defaultPrice.toFixed(2)}
+                          onChange={(e) => updateExtra(idx, { price: e.target.value ? parseFloat(e.target.value) : undefined })}
+                          className="w-full pl-8 pr-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-600 transition font-bold"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Sticky Results */}
+        {/* Results Sidebar */}
         <div className="lg:sticky lg:top-24">
           <div className="bg-slate-900 rounded-[3.5rem] p-10 md:p-14 text-white shadow-2xl relative border border-slate-800">
             <div className="relative z-10">
-              <span className="text-[11px] font-black text-teal-400 uppercase tracking-[0.3em] block mb-3">2026 Monthly Outgoing</span>
+              <span className="text-[11px] font-black text-teal-400 uppercase tracking-[0.3em] block mb-3">Estimated Monthly Bill</span>
               <div className="text-8xl font-black mb-12 tracking-tighter tabular-nums flex items-start">
                 <span className="text-4xl mt-3 mr-1">£</span>{stats.monthly.toFixed(0)}
               </div>
+              
               <div className="space-y-6 mb-12 pt-10 border-t border-slate-800 text-sm">
-                <div className="flex justify-between items-center"><span className="text-slate-400">Weekly Net Cost</span><span className="font-black text-white text-xl">£{stats.weekly.toFixed(2)}</span></div>
-                <div className="flex justify-between items-center"><span className="text-slate-400">Annual Total</span><span className="font-bold text-slate-200">£{stats.yearly.toLocaleString()}</span></div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 font-medium">Weekly Net Cost</span>
+                  <span className="font-black text-white text-xl">£{stats.weekly.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 font-medium">Annual Estimate</span>
+                  <span className="font-bold text-slate-200">£{stats.yearly.toLocaleString()}</span>
+                </div>
               </div>
+
               <div className="space-y-4 mb-10">
                  <div className="flex justify-between text-[11px] font-black uppercase tracking-widest mb-3">
                    <span className="text-teal-400">You Pay: £{stats.weekly.toFixed(0)}</span>
-                   <span className="text-emerald-400">Gov Total: £{stats.govPays.toFixed(0)}</span>
+                   <span className="text-emerald-400">Gov Benefit: £{stats.govPays.toFixed(0)}</span>
                  </div>
-                 <div className="h-4 bg-slate-800 rounded-full overflow-hidden flex">
-                   <div className="bg-teal-500 h-full transition-all duration-1000" style={{ width: `${(stats.youPay / (stats.youPay + stats.govPays)) * 100}%` }}></div>
-                   <div className="bg-emerald-400 h-full transition-all duration-1000" style={{ width: `${(stats.govPays / (stats.youPay + stats.govPays)) * 100}%` }}></div>
+                 <div className="h-4 bg-slate-800 rounded-full overflow-hidden flex shadow-inner">
+                   <div className="bg-teal-500 h-full transition-all duration-1000 ease-out" style={{ width: `${(stats.youPay / (stats.youPay + stats.govPays)) * 100}%` }}></div>
+                   <div className="bg-emerald-400 h-full transition-all duration-1000 ease-out" style={{ width: `${(stats.govPays / (stats.youPay + stats.govPays)) * 100}%` }}></div>
                  </div>
               </div>
+
               <button className="w-full py-6 bg-teal-600 rounded-[1.5rem] font-black text-base hover:bg-teal-500 transition shadow-xl shadow-teal-600/20 active:scale-[0.98]">
-                Get Breakdown PDF
+                Get Full PDF Breakdown
               </button>
+              <p className="text-[10px] text-slate-500 text-center mt-6 uppercase tracking-[0.2em] font-black">2026 Childcare Data</p>
             </div>
           </div>
         </div>
