@@ -2,7 +2,6 @@
 import React, { useState, useMemo } from 'react';
 import { CalculatorData, FundingType } from '../types';
 import { PROVIDER_TYPES, CHILDCARE_DATA_2024 } from '../constants';
-import { GoogleGenAI } from "@google/genai";
 
 // Refined Tooltip component matching the Nuuri info interaction
 const InfoTooltip: React.FC<{ text: string }> = ({ text }) => {
@@ -28,9 +27,6 @@ const InfoTooltip: React.FC<{ text: string }> = ({ text }) => {
 };
 
 const Calculator: React.FC = () => {
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<{ text: string; sources: any[] } | null>(null);
-
   const [data, setData] = useState<CalculatorData>({
     hoursPerWeek: 30,
     daysPerWeek: 3,
@@ -76,9 +72,11 @@ const Calculator: React.FC = () => {
 
     let weeklyFundingCredit = 0;
     if (data.fundingType !== 'none') {
+      // Fix: Removed redundant check for 'none' as fundingType is already narrowed to '15h' | '30h' by the parent if statement.
       const fundedLimit = data.fundingType === '15h' ? 15 : 30;
       const hoursToFund = Math.min(data.hoursPerWeek, fundedLimit);
       const effectiveHourly = data.rateType === 'hourly' ? rate : (rate / (data.hoursPerWeek / data.daysPerWeek));
+      // Standard funding is 38 weeks per year
       weeklyFundingCredit = (hoursToFund * effectiveHourly * 38) / data.weeksPerYear;
     }
 
@@ -98,51 +96,6 @@ const Calculator: React.FC = () => {
     };
   }, [data, isLondon]);
 
-  const fetchRealtimeRate = async () => {
-    if (!data.postcode) {
-      alert("Please enter at least a partial postcode first (e.g., SW11)");
-      return;
-    }
-
-    setIsSearching(true);
-    setSearchResult(null);
-
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Find the current average hourly nursery rate in the ${data.postcode} area for 2024/2025. Be concise and provide a single average figure if possible.`,
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
-      });
-
-      const text = response.text || "No specific rate information found for this area.";
-      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-      
-      setSearchResult({
-        text: text,
-        sources: chunks
-          .filter(c => c.web)
-          .map(c => ({ uri: c.web?.uri, title: c.web?.title }))
-      });
-
-      // Simple regex attempt to find a number like £12.50 or 12.50
-      const match = text.match(/£?(\d+\.\d{2})/);
-      if (match && match[1]) {
-        const rate = parseFloat(match[1]);
-        if (!isNaN(rate)) {
-          updateData({ useCustomRate: true, customRateValue: rate });
-        }
-      }
-    } catch (error) {
-      console.error("Search failed:", error);
-      setSearchResult({ text: "Could not retrieve real-time data at this time.", sources: [] });
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
   const updateData = (updates: Partial<CalculatorData>) => {
     setData(prev => ({ ...prev, ...updates }));
   };
@@ -157,7 +110,7 @@ const Calculator: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 py-12 lg:py-20">
       <div className="mb-12 text-center lg:text-left">
         <h1 className="text-3xl lg:text-5xl font-black text-slate-900 mb-4 tracking-tight">Childcare Cost Calculator</h1>
-        <p className="text-slate-500 text-lg max-w-2xl">Use our 2024/25 estimates or find live regional rates using Gemini Smart Search.</p>
+        <p className="text-slate-500 text-lg max-w-2xl">Use our 2024/25 estimates to see how government funding affects your monthly childcare bill.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
@@ -174,23 +127,13 @@ const Calculator: React.FC = () => {
               <div className="space-y-6">
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Postcode Prefix</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="e.g. SW11" 
-                      value={data.postcode} 
-                      onChange={(e) => updateData({ postcode: e.target.value.toUpperCase() })}
-                      className="flex-grow p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-teal-600 transition outline-none font-bold"
-                    />
-                    <button 
-                      onClick={fetchRealtimeRate}
-                      disabled={isSearching}
-                      className="bg-slate-900 text-white p-4 rounded-2xl hover:bg-teal-600 transition disabled:opacity-50 flex items-center justify-center w-14"
-                      title="Search live rates with Gemini"
-                    >
-                      {isSearching ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles"></i>}
-                    </button>
-                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. SW11" 
+                    value={data.postcode} 
+                    onChange={(e) => updateData({ postcode: e.target.value.toUpperCase() })}
+                    className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-teal-600 transition outline-none font-bold"
+                  />
                   {isLondon && <p className="text-[10px] text-teal-600 font-bold mt-2 uppercase">London regional average applied</p>}
                 </div>
                 <div>
@@ -225,53 +168,24 @@ const Calculator: React.FC = () => {
                     <input 
                       type="number" 
                       step="0.01" 
-                      value={data.customRateValue || ''}
                       placeholder={stats.breakdown.rateUsed.toFixed(2)}
                       onChange={(e) => updateData({ useCustomRate: true, customRateValue: parseFloat(e.target.value) || 0 })}
                       className="w-full p-4 pl-8 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-teal-600 transition"
                     />
                   </div>
+                  <p className="text-[9px] text-slate-400 mt-2 font-medium">Using UK average (£{stats.breakdown.rateUsed.toFixed(2)}) if blank.</p>
                 </div>
               </div>
             </div>
-
-            {/* AI Search Feedback */}
-            {searchResult && (
-              <div className="mt-8 p-6 bg-teal-50 border border-teal-100 rounded-[2rem] animate-in fade-in slide-in-from-top-2">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs">
-                    <i className="fa-solid fa-robot"></i>
-                  </div>
-                  <div className="flex-grow">
-                    <p className="text-xs text-teal-900 leading-relaxed font-medium">{searchResult.text}</p>
-                  </div>
-                </div>
-                {searchResult.sources.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-4 border-t border-teal-200/50">
-                    <span className="text-[9px] font-black text-teal-600 uppercase tracking-widest w-full mb-1">Grounding Sources:</span>
-                    {searchResult.sources.map((source, i) => (
-                      <a 
-                        key={i} 
-                        href={source.uri} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-[10px] bg-white border border-teal-200 px-3 py-1 rounded-full text-teal-700 hover:bg-teal-100 transition truncate max-w-[200px]"
-                      >
-                        {source.title || "Reference"} <i className="fa-solid fa-external-link text-[8px] ml-1"></i>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Section: Funding Eligibility */}
+          {/* New Section: What funding assistance are you eligible for? (Nuuri Reference Style) */}
           <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-100 shadow-sm">
             <h3 className="text-2xl font-black text-slate-900 mb-2">What funding assistance are you eligible for?</h3>
             <p className="text-xs text-slate-400 mb-8 font-medium">Select the schemes you qualify for based on your child's age and work status.</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1: 15h 9m+ */}
               <div 
                 onClick={() => updateData({ fundingType: data.fundingType === '15h' ? 'none' : '15h' })}
                 className={`p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex flex-col justify-between h-40 group ${data.fundingType === '15h' ? 'border-teal-600 bg-teal-50/50 shadow-md' : 'border-slate-50 bg-slate-50 hover:border-slate-100'}`}
@@ -290,8 +204,9 @@ const Calculator: React.FC = () => {
                 </div>
               </div>
 
+              {/* Card 2: 15h 2y */}
               <div 
-                onClick={() => updateData({ fundingType: data.fundingType === '15h' ? 'none' : '15h' })}
+                onClick={() => updateData({ fundingType: data.fundingType === '15h' ? 'none' : '15h' })} // logic placeholder for 15h
                 className={`p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex flex-col justify-between h-40 group ${data.fundingType === '15h' ? 'border-teal-600 bg-teal-50/50 shadow-md' : 'border-slate-50 bg-slate-50 hover:border-slate-100'}`}
               >
                 <div>
@@ -308,6 +223,7 @@ const Calculator: React.FC = () => {
                 </div>
               </div>
 
+              {/* Card 3: 15/30h 3-4y */}
               <div 
                 onClick={() => updateData({ fundingType: data.fundingType === '30h' ? 'none' : '30h' })}
                 className={`p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex flex-col justify-between h-40 group ${data.fundingType === '30h' ? 'border-teal-600 bg-teal-50/50 shadow-md' : 'border-slate-50 bg-slate-50 hover:border-slate-100'}`}
@@ -326,6 +242,7 @@ const Calculator: React.FC = () => {
                 </div>
               </div>
 
+              {/* Card 4: Tax-Free Childcare */}
               <div 
                 onClick={() => updateData({ includeTaxFreeChildcare: !data.includeTaxFreeChildcare })}
                 className={`p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex flex-col justify-between h-40 group ${data.includeTaxFreeChildcare ? 'border-teal-600 bg-teal-50/50 shadow-md' : 'border-slate-50 bg-slate-50 hover:border-slate-100'}`}
