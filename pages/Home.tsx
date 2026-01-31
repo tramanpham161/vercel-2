@@ -1,214 +1,129 @@
 
-import React, { useState } from 'react';
-import { Provider } from '../types';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-const FindProvider: React.FC = () => {
-  const [postcode, setPostcode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showAdvice, setShowAdvice] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-
-  // Simulated Providers based on common types
-  const mockProviders: Provider[] = [
-    { id: '1', name: 'Sunshine Day Nursery', type: 'Nursery', rating: 'Outstanding', distance: '0.4 miles', offers: ['9m+', '2y', '30h'], address: '12 Primary Lane, London' },
-    { id: '2', name: 'Little Explorers Preschool', type: 'Preschool', rating: 'Good', distance: '0.8 miles', offers: ['2y', '30h'], address: 'St. Marys Hall, High Street' },
-    { id: '3', name: 'Sarah\'s Home Childminding', type: 'Childminder', rating: 'Outstanding', distance: '1.2 miles', offers: ['9m+', '30h'], address: 'Residential Area, London' },
-    { id: '4', name: 'Bluebell Montessori', type: 'Nursery', rating: 'Outstanding', distance: '1.5 miles', offers: ['2y', '30h'], address: 'Greenway Business Park' },
-  ];
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!postcode) return;
-    
-    setLoading(true);
-    setIsSearching(true);
-    
-    // Simulate a brief loading state for UX
-    setTimeout(() => {
-      setLoading(false);
-      setShowAdvice(true);
-    }, 600);
-  };
-
-  const useLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        // In a real app, reverse geocode here. For demo, we'll set a sample.
-        setPostcode('SW1A 1AA');
-      });
-    }
-  };
-
+const Home: React.FC = () => {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12 lg:py-20">
-      <div className="mb-12 text-center lg:text-left max-w-3xl">
-        <h1 className="text-4xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tighter">Find Funded Providers</h1>
-        <p className="text-slate-500 text-xl font-medium leading-relaxed">
-          Search for nurseries, childminders, and preschools near you that accept the 2026 government funding entitlements.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-        <div className="lg:col-span-2 space-y-8">
-          
-          {/* Search Bar Container */}
-          <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8">
-                <i className="fa-solid fa-magnifying-glass-location text-teal-50 text-7xl -rotate-12"></i>
+    <div>
+      {/* Hero Section */}
+      <section className="relative bg-teal-600 text-white py-24 overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-teal-500 rounded-full opacity-50 blur-3xl"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-3xl">
+            <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6 text-balance">
+             Childcare funding doesn’t have to be confusing anymore.
+            </h1>
+            <p className="text-xl text-teal-50 mb-10 leading-relaxed font-medium">
+              Check your eligibility for the full 30-hour entitlement, now available to working parents of children from 9 months to 4 years.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link to="/eligibility" className="bg-white text-teal-700 px-8 py-4 rounded-xl font-bold text-center hover:bg-teal-50 transition shadow-lg">
+                Check Eligibility
+              </Link>
+              <Link to="/calculator" className="bg-teal-700 text-white px-8 py-4 rounded-xl font-bold text-center border border-teal-500 hover:bg-teal-800 transition shadow-lg">
+                Estimate My Costs
+              </Link>
             </div>
-            <form onSubmit={handleSearch} className="relative z-10">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block">Your Postcode</label>
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-grow">
-                        <input 
-                            type="text" 
-                            placeholder="Enter postcode (e.g. SW11)" 
-                            value={postcode}
-                            onChange={(e) => setPostcode(e.target.value.toUpperCase())}
-                            className="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] font-bold text-lg focus:border-teal-600 outline-none transition"
-                        />
-                        <button 
-                            type="button"
-                            onClick={useLocation}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-teal-600 hover:text-teal-700 transition"
-                        >
-                            <i className="fa-solid fa-location-crosshairs text-xl"></i>
-                        </button>
-                    </div>
-                    <button 
-                        type="submit"
-                        className="bg-slate-900 text-white px-10 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-teal-600 transition shadow-xl active:scale-95 flex items-center justify-center gap-3"
-                    >
-                        Search Area <i className="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Section */}
+      <section className="py-8 bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all">
+          <div className="flex items-center gap-2 font-semibold text-slate-500 text-xs">
+             <i className="fa-solid fa-building-columns text-lg"></i>
+             <span>GOV.UK Verified Rules</span>
+          </div>
+          <div className="flex items-center gap-2 font-semibold text-slate-500 text-xs">
+             <i className="fa-solid fa-shield-halved text-lg"></i>
+             <span>Independent Analysis</span>
+          </div>
+          <div className="flex items-center gap-2 font-semibold text-slate-500 text-xs">
+             <i className="fa-solid fa-calendar-check text-lg"></i>
+             <span>2025/26 Updated Data</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-20 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+            <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
+              <div className="text-teal-600 text-5xl font-black mb-2 leading-none">30</div>
+              <div className="text-slate-900 font-bold text-lg mb-2">Weekly free hours</div>
+              <p className="text-slate-500 text-sm leading-relaxed">Now available to working parents of all children from 9 months to school age.</p>
+            </div>
+            <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
+              <div className="text-teal-600 text-5xl font-black mb-2 leading-none">£2k</div>
+              <div className="text-slate-900 font-bold text-lg mb-2">Tax-free savings</div>
+              <p className="text-slate-500 text-sm leading-relaxed">Maximum government top-up per child per year to help pay your bills.</p>
+            </div>
+            <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
+              <div className="text-teal-600 text-5xl font-black mb-2 leading-none">85%</div>
+              <div className="text-slate-900 font-bold text-lg mb-2">Cost recovery</div>
+              <p className="text-slate-500 text-sm leading-relaxed">Maximum amount working parents can claim back through Universal Credit.</p>
+            </div>
           </div>
 
-          {/* Results Area */}
-          {isSearching && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="flex items-center justify-between px-6">
-                    <h3 className="text-xl font-black text-slate-900">Nearby Providers</h3>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{mockProviders.length} results found</span>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {mockProviders.map((provider) => (
-                        <div key={provider.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-teal-200 transition-all group">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest block mb-1">{provider.type}</span>
-                                    <h4 className="text-xl font-black text-slate-900 group-hover:text-teal-700 transition">{provider.name}</h4>
-                                </div>
-                                <div className="bg-slate-900 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
-                                    {provider.rating}
-                                </div>
-                            </div>
-                            
-                            <p className="text-slate-400 text-xs mb-6 flex items-center gap-2">
-                                <i className="fa-solid fa-location-dot"></i> {provider.address} • {provider.distance}
-                            </p>
-
-                            <div className="flex flex-wrap gap-2 mb-8">
-                                {provider.offers.map(tag => (
-                                    <span key={tag} className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase">
-                                        {tag} Funded
-                                    </span>
-                                ))}
-                            </div>
-
-                            <div className="flex gap-3">
-                                <button className="flex-grow py-4 bg-slate-900 text-white rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-teal-600 transition">
-                                    View Details
-                                </button>
-                                <a 
-                                    href="https://www.childcare.co.uk" target="_blank"
-                                    className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-slate-400 hover:text-teal-600 hover:border-teal-200 transition"
-                                >
-                                    <i className="fa-solid fa-external-link"></i>
-                                </a>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+          <div className="lg:flex items-center gap-20">
+            <div className="lg:w-1/2 mb-12 lg:mb-0">
+              <div className="relative">
+                <div className="absolute -inset-4 bg-teal-100 rounded-[3rem] -rotate-3"></div>
+                <img 
+                  src="https://images.unsplash.com/photo-1596464716127-f2a82984de30?auto=format&fit=crop&q=80&w=800&h=600" 
+                  alt="Modern bright nursery classroom" 
+                  className="relative rounded-[2.5rem] shadow-2xl object-cover" 
+                />
+              </div>
             </div>
-          )}
+            <div className="lg:w-1/2">
+              <h2 className="text-3xl md:text-5xl font-black mb-8 text-slate-900 leading-tight">Empowering families with clear cost estimates.</h2>
+              <div className="space-y-8">
+                {[
+                  { title: 'Full 30-hour expansion', text: 'The government rollout is now complete. Working parents of toddlers and infants (9m+) can access full 30-hour support.' },
+                  { title: 'Tax-free childcare integration', text: 'We calculate your net out-of-pocket costs after both funded hours and the 20% Tax-Free top-up.' },
+                  { title: 'Flexible care pro-rating', text: 'Calculations adjusted for "stretched" funding if your child attends nursery year-round (51 weeks).' },
+                ].map((benefit, i) => (
+                  <div key={i} className="flex gap-5">
+                    <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center flex-shrink-0 text-teal-600">
+                      <i className="fa-solid fa-check-double text-xl"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xl text-slate-900 mb-1">{benefit.title}</h4>
+                      <p className="text-slate-600 leading-relaxed text-sm">{benefit.text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-12">
+                <Link to="/eligibility" className="inline-flex items-center gap-3 bg-teal-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-teal-700 transition shadow-xl shadow-teal-600/20">
+                  Check My Eligibility <i className="fa-solid fa-arrow-right"></i>
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* Sidebar: Advice & Official Links */}
-        <div className="lg:sticky lg:top-24 space-y-8">
-            <div className="bg-slate-900 rounded-[3.5rem] p-10 md:p-14 text-white shadow-2xl relative border border-slate-800">
-                <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white">
-                            <i className="fa-solid fa-info-circle text-lg"></i>
-                        </div>
-                        <span className="text-[11px] font-black text-teal-400 uppercase tracking-[0.3em]">Local Advisor</span>
-                    </div>
-
-                    <div className="min-h-[200px] flex flex-col">
-                        {loading ? (
-                            <div className="space-y-4 animate-pulse">
-                                <div className="h-4 bg-slate-800 rounded w-3/4"></div>
-                                <div className="h-4 bg-slate-800 rounded w-full"></div>
-                                <div className="h-4 bg-slate-800 rounded w-5/6"></div>
-                                <div className="h-4 bg-slate-800 rounded w-2/3 mt-8"></div>
-                            </div>
-                        ) : showAdvice ? (
-                            <div className="space-y-6">
-                                <div>
-                                    <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">Council Directory</h6>
-                                    <p className="text-slate-300 text-sm leading-relaxed font-medium italic">
-                                        For the area {postcode}, your local council holds the definitive list of providers who are registered for the 9-month, 2-year, and 30-hour entitlements.
-                                    </p>
-                                </div>
-                                <div>
-                                    <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">2026 Insider Tip</h6>
-                                    <p className="text-slate-300 text-sm leading-relaxed font-medium italic">
-                                        Waitlists for September 2026 starts are already opening. Contact your preferred provider immediately to secure your "30 Hours" place, as these are often capped.
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-slate-500 text-sm leading-relaxed">
-                                Enter your postcode to receive specific advice for your local council's funding procedures and application deadlines.
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="mt-12 pt-10 border-t border-slate-800">
-                        <h5 className="text-[10px] font-black uppercase tracking-widest text-teal-400 mb-6 italic">Quick Resources</h5>
-                        <div className="space-y-4">
-                            <a 
-                                href="https://www.gov.uk/find-free-early-education" target="_blank"
-                                className="w-full py-4 bg-slate-800 border border-slate-700 rounded-2xl flex items-center justify-between px-6 hover:bg-slate-700 transition group"
-                            >
-                                <span className="font-bold text-xs">Gov.uk Directory</span>
-                                <i className="fa-solid fa-chevron-right text-[10px] text-slate-500 group-hover:text-teal-400"></i>
-                            </a>
-                            <a 
-                                href="https://www.childcare.co.uk/find/Nurseries/2-year-old-free-childcare" target="_blank"
-                                className="w-full py-4 bg-slate-800 border border-slate-700 rounded-2xl flex items-center justify-between px-6 hover:bg-slate-700 transition group"
-                            >
-                                <span className="font-bold text-xs">Childcare.co.uk 2y Tool</span>
-                                <i className="fa-solid fa-chevron-right text-[10px] text-slate-500 group-hover:text-teal-400"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-teal-600 rounded-[2.5rem] p-10 text-white shadow-xl shadow-teal-600/10">
-                <h4 className="text-xl font-black mb-4">Did you know?</h4>
-                <p className="text-teal-50 text-sm leading-relaxed font-medium">
-                    Providers often have separate waiting lists for funded spaces. We recommend contacting nurseries at least 6 months before your child's intended start date.
-                </p>
-            </div>
+      {/* Final CTA */}
+      <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
+          <h2 className="text-3xl md:text-5xl font-black mb-8">Want a clearer picture of your childcare costs?</h2>
+          <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
+            Our tool helps you see the true cost of childcare after all entitlements are applied.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link to="/calculator" className="bg-teal-600 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-teal-500 transition shadow-2xl shadow-teal-600/20">
+              Start Cost Estimation
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };
 
-export default FindProvider;
+export default Home;
