@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
-import { GoogleGenAI } from "@google/genai";
+import React, { useState } from 'react';
 import { Provider } from '../types';
 
 const FindProvider: React.FC = () => {
   const [postcode, setPostcode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [aiAdvice, setAiAdvice] = useState<string | null>(null);
+  const [showAdvice, setShowAdvice] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
   // Simulated Providers based on common types
@@ -17,27 +16,18 @@ const FindProvider: React.FC = () => {
     { id: '4', name: 'Bluebell Montessori', type: 'Nursery', rating: 'Outstanding', distance: '1.5 miles', offers: ['2y', '30h'], address: 'Greenway Business Park' },
   ];
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!postcode) return;
     
     setLoading(true);
     setIsSearching(true);
     
-    // Use Gemini to get localized advice for finding providers in that area
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `I am a parent in the UK looking for funded childcare in the area with postcode ${postcode}. Provide a short, 3-paragraph guide on: 1. Which local council I should contact. 2. How to use the gov.uk 'find free early education' tool for this specific region. 3. One insider tip for getting a 30-hour space in 2026. Keep the tone professional and helpful.`,
-      });
-      setAiAdvice(response.text);
-    } catch (err) {
-      console.error("AI Advice failed", err);
-      setAiAdvice("To find providers in your area, visit your local council website or the official Gov.uk directory. Most councils maintain a list of all providers registered for the 9-month, 2-year, and 30-hour entitlements.");
-    } finally {
+    // Simulate a brief loading state for UX
+    setTimeout(() => {
       setLoading(false);
-    }
+      setShowAdvice(true);
+    }, 800);
   };
 
   const useLocation = () => {
@@ -146,14 +136,13 @@ const FindProvider: React.FC = () => {
           )}
         </div>
 
-        {/* Sidebar: AI Advisor & Official Links */}
+        {/* Sidebar: Advice & Official Links */}
         <div className="lg:sticky lg:top-24 space-y-8">
-            {/* Gemini Powered Advisor Card */}
             <div className="bg-slate-900 rounded-[3.5rem] p-10 md:p-14 text-white shadow-2xl relative border border-slate-800">
                 <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white">
-                            <i className="fa-solid fa-wand-magic-sparkles text-lg"></i>
+                            <i className="fa-solid fa-info-circle text-lg"></i>
                         </div>
                         <span className="text-[11px] font-black text-teal-400 uppercase tracking-[0.3em]">Local Advisor</span>
                     </div>
@@ -166,11 +155,20 @@ const FindProvider: React.FC = () => {
                                 <div className="h-4 bg-slate-800 rounded w-5/6"></div>
                                 <div className="h-4 bg-slate-800 rounded w-2/3 mt-8"></div>
                             </div>
-                        ) : aiAdvice ? (
-                            <div className="prose prose-invert prose-sm">
-                                <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line font-medium italic">
-                                    {aiAdvice}
-                                </p>
+                        ) : showAdvice ? (
+                            <div className="space-y-6">
+                                <div>
+                                    <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">Council Directory</h6>
+                                    <p className="text-slate-300 text-sm leading-relaxed font-medium italic">
+                                        For the area {postcode}, your local council holds the definitive list of providers who are registered for the 9-month, 2-year, and 30-hour entitlements.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">2026 Insider Tip</h6>
+                                    <p className="text-slate-300 text-sm leading-relaxed font-medium italic">
+                                        Waitlists for September 2026 starts are already opening. Contact your preferred provider immediately to secure your "30 Hours" place, as these are often capped.
+                                    </p>
+                                </div>
                             </div>
                         ) : (
                             <p className="text-slate-500 text-sm leading-relaxed">
