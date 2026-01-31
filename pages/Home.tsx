@@ -1,129 +1,91 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import Home from './pages/Home';
+import Eligibility from './pages/Eligibility';
+import Calculator from './pages/Calculator';
+import FindProvider from './pages/FindProvider';
+import FAQ from './pages/FAQ';
+import About from './pages/About';
+import { Logo } from './constants';
 
-const Home: React.FC = () => {
+const Navbar = () => {
+  const location = useLocation();
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="relative bg-teal-600 text-white py-24 overflow-hidden">
-        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-teal-500 rounded-full opacity-50 blur-3xl"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6 text-balance">
-             Childcare funding doesn’t have to be confusing anymore.
-            </h1>
-            <p className="text-xl text-teal-50 mb-10 leading-relaxed font-medium">
-              Check your eligibility for the full 30-hour entitlement, now available to working parents of children from 9 months to 4 years.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/eligibility" className="bg-white text-teal-700 px-8 py-4 rounded-xl font-bold text-center hover:bg-teal-50 transition shadow-lg">
-                Check Eligibility
-              </Link>
-              <Link to="/calculator" className="bg-teal-700 text-white px-8 py-4 rounded-xl font-bold text-center border border-teal-500 hover:bg-teal-800 transition shadow-lg">
-                Estimate My Costs
-              </Link>
-            </div>
+    <nav className="bg-white border-b sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
+          <Link to="/">
+            <Logo />
+          </Link>
+          <div className="hidden md:flex space-x-8">
+            <Link to="/" className={`${isActive('/') ? 'text-teal-600 font-semibold' : 'text-slate-600'} hover:text-teal-600 transition text-sm font-medium`}>Home</Link>
+            <Link to="/eligibility" className={`${isActive('/eligibility') ? 'text-teal-600 font-semibold' : 'text-slate-600'} hover:text-teal-600 transition text-sm font-medium`}>Eligibility</Link>
+            <Link to="/calculator" className={`${isActive('/calculator') ? 'text-teal-600 font-semibold' : 'text-slate-600'} hover:text-teal-600 transition text-sm font-medium`}>Calculator</Link>
+            <Link to="/find" className={`${isActive('/find') ? 'text-teal-600 font-semibold' : 'text-slate-600'} hover:text-teal-600 transition text-sm font-medium`}>Find Provider</Link>
+            <Link to="/about" className={`${isActive('/about') ? 'text-teal-600 font-semibold' : 'text-slate-600'} hover:text-teal-600 transition text-sm font-medium`}>About</Link>
           </div>
         </div>
-      </section>
-
-      {/* Trust Section */}
-      <section className="py-8 bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all">
-          <div className="flex items-center gap-2 font-semibold text-slate-500 text-xs">
-             <i className="fa-solid fa-building-columns text-lg"></i>
-             <span>GOV.UK Verified Rules</span>
-          </div>
-          <div className="flex items-center gap-2 font-semibold text-slate-500 text-xs">
-             <i className="fa-solid fa-shield-halved text-lg"></i>
-             <span>Independent Analysis</span>
-          </div>
-          <div className="flex items-center gap-2 font-semibold text-slate-500 text-xs">
-             <i className="fa-solid fa-calendar-check text-lg"></i>
-             <span>2025/26 Updated Data</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-            <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
-              <div className="text-teal-600 text-5xl font-black mb-2 leading-none">30</div>
-              <div className="text-slate-900 font-bold text-lg mb-2">Weekly free hours</div>
-              <p className="text-slate-500 text-sm leading-relaxed">Now available to working parents of all children from 9 months to school age.</p>
-            </div>
-            <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
-              <div className="text-teal-600 text-5xl font-black mb-2 leading-none">£2k</div>
-              <div className="text-slate-900 font-bold text-lg mb-2">Tax-free savings</div>
-              <p className="text-slate-500 text-sm leading-relaxed">Maximum government top-up per child per year to help pay your bills.</p>
-            </div>
-            <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
-              <div className="text-teal-600 text-5xl font-black mb-2 leading-none">85%</div>
-              <div className="text-slate-900 font-bold text-lg mb-2">Cost recovery</div>
-              <p className="text-slate-500 text-sm leading-relaxed">Maximum amount working parents can claim back through Universal Credit.</p>
-            </div>
-          </div>
-
-          <div className="lg:flex items-center gap-20">
-            <div className="lg:w-1/2 mb-12 lg:mb-0">
-              <div className="relative">
-                <div className="absolute -inset-4 bg-teal-100 rounded-[3rem] -rotate-3"></div>
-                <img 
-                  src="https://images.unsplash.com/photo-1596464716127-f2a82984de30?auto=format&fit=crop&q=80&w=800&h=600" 
-                  alt="Modern bright nursery classroom" 
-                  className="relative rounded-[2.5rem] shadow-2xl object-cover" 
-                />
-              </div>
-            </div>
-            <div className="lg:w-1/2">
-              <h2 className="text-3xl md:text-5xl font-black mb-8 text-slate-900 leading-tight">Empowering families with clear cost estimates.</h2>
-              <div className="space-y-8">
-                {[
-                  { title: 'Full 30-hour expansion', text: 'The government rollout is now complete. Working parents of toddlers and infants (9m+) can access full 30-hour support.' },
-                  { title: 'Tax-free childcare integration', text: 'We calculate your net out-of-pocket costs after both funded hours and the 20% Tax-Free top-up.' },
-                  { title: 'Flexible care pro-rating', text: 'Calculations adjusted for "stretched" funding if your child attends nursery year-round (51 weeks).' },
-                ].map((benefit, i) => (
-                  <div key={i} className="flex gap-5">
-                    <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center flex-shrink-0 text-teal-600">
-                      <i className="fa-solid fa-check-double text-xl"></i>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xl text-slate-900 mb-1">{benefit.title}</h4>
-                      <p className="text-slate-600 leading-relaxed text-sm">{benefit.text}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-12">
-                <Link to="/eligibility" className="inline-flex items-center gap-3 bg-teal-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-teal-700 transition shadow-xl shadow-teal-600/20">
-                  Check My Eligibility <i className="fa-solid fa-arrow-right"></i>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl md:text-5xl font-black mb-8">Want a clearer picture of your childcare costs?</h2>
-          <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
-            Our tool helps you see the true cost of childcare after all entitlements are applied.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link to="/calculator" className="bg-teal-600 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-teal-500 transition shadow-2xl shadow-teal-600/20">
-              Start Cost Estimation
-            </Link>
-          </div>
-        </div>
-      </section>
-    </div>
+      </div>
+    </nav>
   );
 };
 
-export default Home;
+const Footer = () => (
+  <footer className="bg-slate-900 text-slate-300 py-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div className="col-span-1 md:col-span-2">
+          <Logo />
+          <p className="mt-6 text-slate-400 max-w-sm leading-relaxed text-sm">
+            Helping parents across the UK navigate the complex world of childcare funding. Comprehensive support for England, Scotland, Wales, and Northern Ireland.
+          </p>
+        </div>
+        <div>
+          <h4 className="font-bold text-white mb-6 text-sm uppercase tracking-widest">Tools</h4>
+          <ul className="space-y-3 text-sm">
+            <li><Link to="/eligibility" className="hover:text-teal-400 transition">Eligibility Checker</Link></li>
+            <li><Link to="/calculator" className="hover:text-teal-400 transition">Cost Calculator</Link></li>
+            <li><Link to="/find" className="hover:text-teal-400 transition">Find a Provider</Link></li>
+            <li><Link to="/faq" className="hover:text-teal-400 transition">Funding FAQ</Link></li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="font-bold text-white mb-6 text-sm uppercase tracking-widest">Helpful resources</h4>
+          <ul className="space-y-3 text-sm">
+            <li><a href="https://www.gov.uk/free-childcare-if-working" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Free Childcare (Gov.uk)</a></li>
+            <li><a href="https://beststartinlife.gov.uk" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Best Start in Life</a></li>
+          </ul>
+        </div>
+      </div>
+      <div className="mt-16 pt-8 border-t border-slate-800 text-xs text-center text-slate-500">
+        &copy; {new Date().getFullYear()} Childcare Checker UK. Independent information tool.
+      </div>
+    </div>
+  </footer>
+);
+
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <Navbar />
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/eligibility" element={<Eligibility />} />
+            <Route path="/calculator" element={<Calculator />} />
+            <Route path="/find" element={<FindProvider />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/about" element={<About />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </BrowserRouter>
+  );
+};
+
+export default App;
