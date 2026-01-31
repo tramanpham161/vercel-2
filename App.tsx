@@ -53,10 +53,10 @@ const Footer = () => (
           </ul>
         </div>
         <div>
-          <h4 className="font-bold text-white mb-6 text-sm uppercase tracking-widest">Official Support</h4>
+          <h4 className="font-bold text-white mb-6 text-sm uppercase tracking-widest">Helpful resources</h4>
           <ul className="space-y-3 text-sm">
             <li><a href="https://www.gov.uk/free-childcare-if-working" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Free Childcare (Gov.uk)</a></li>
-            <li><a href="https://www.childcare.co.uk/find/Nurseries/2-year-old-free-childcare" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">2y Funding Search</a></li>
+            <li><a href="https://beststartinlife.gov.uk" className="hover:text-teal-400 transition" target="_blank" rel="noopener noreferrer">Best Start in Life</a></li>
           </ul>
         </div>
       </div>
