@@ -22,6 +22,16 @@ export interface EligibilityData {
   isPregnant: boolean;
 }
 
+export interface Provider {
+  id: string;
+  name: string;
+  type: string;
+  rating: string;
+  distance: string;
+  offers: string[]; // e.g., ['9m+', '2y', '30h']
+  address: string;
+}
+
 export interface ExtraCost {
   name: string;
   enabled: boolean;
