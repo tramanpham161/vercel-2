@@ -61,8 +61,9 @@ const Eligibility: React.FC = () => {
     const partnerWorking = !data.hasPartner || (data.partnerWorkStatus === 'working' || data.partnerWorkStatus === 'on-leave');
     const incomeOk = data.incomeInRange === 'yes';
     const workingFamiliesEligible = isWorking && partnerWorking && incomeOk;
+    const hasBenefits = data.benefits.length > 0;
 
-    // England 2026 Expansion Logic
+    // --- ENGLAND LOGIC ---
     if (data.location === 'England') {
       const age34 = data.childAge === '3-4y';
       list.push({
@@ -72,7 +73,7 @@ const Eligibility: React.FC = () => {
         description: 'Standard funded childcare for all 3 and 4-year-olds in England, regardless of income.',
         hours: age34 ? 15 : 0,
         type: 'funding',
-        reason: age34 ? "Your child is in the 3-4 age group." : "Only available for children aged 3 or 4.",
+        reason: age34 ? "Your child is in the 3-4 age group." : "Available for children aged 3 or 4.",
         link: OFFICIAL_LINKS.schemes.eng15hUniversal
       });
 
@@ -85,28 +86,90 @@ const Eligibility: React.FC = () => {
         description: '30 hours for working parents of children from 9 months to 4 years.',
         hours: qualifies30h ? 30 : 0,
         type: 'funding',
-        reason: qualifies30h ? "Both parents work and child is within the 2026 expanded age range." : "Requires working status for both parents and child age between 9m and 4y.",
+        reason: qualifies30h ? "Both parents work and child is within the expanded age range." : "Requires working status and child age between 9m and 4y.",
         link: OFFICIAL_LINKS.schemes.engExpansion
       });
     }
 
-    // Scotland/Wales Regionals
-    if (data.location === 'Scotland' || data.location === 'Wales') {
-        const hours = data.childAge === '3-4y' ? 30 : 0;
+    // --- SCOTLAND LOGIC ---
+    if (data.location === 'Scotland') {
+      const isAge34 = data.childAge === '3-4y';
+      const isAge2Eligible = data.childAge === '2y' && (hasBenefits || data.childDisabled);
+      
+      if (isAge34 || isAge2Eligible) {
         list.push({
-            id: 'regional-funding',
-            title: `30 Hours in ${data.location}`,
-            category: 'Universal',
-            description: `Regional funded hours provided by the ${data.location} government.`,
-            hours: hours,
-            type: 'funding',
-            reason: hours > 0 ? `Qualified as a resident of ${data.location} with a 3-4 year old.` : "Only for 3-4 year olds.",
-            link: data.location === 'Scotland' ? OFFICIAL_LINKS.schemes.scotland1140 : OFFICIAL_LINKS.schemes.walesOffer
+          id: 'scot-1140',
+          title: '1140 Hours Funding (30h/wk)',
+          category: 'Universal',
+          description: 'All 3-4 year olds and eligible 2 year olds receive 1,140 hours of funded childcare a year.',
+          hours: 30,
+          type: 'funding',
+          reason: isAge34 ? "Universal entitlement for all 3-4 year olds in Scotland." : "Eligible 2-year-olds on certain benefits qualify for the full 1140 hours.",
+          link: OFFICIAL_LINKS.schemes.scotland1140
         });
+      }
     }
 
-    // Universal Credit
-    if (data.benefits.includes('Universal Credit') || (isWorking && data.benefits.length > 0)) {
+    // --- WALES LOGIC ---
+    if (data.location === 'Wales') {
+      const isAge34 = data.childAge === '3-4y';
+      if (isAge34) {
+        if (workingFamiliesEligible) {
+          list.push({
+            id: 'wales-offer',
+            title: 'Childcare Offer for Wales (30h)',
+            category: 'Working Families',
+            description: '30 hours of combined early education and childcare for 39 weeks of the year.',
+            hours: 30,
+            type: 'funding',
+            reason: "Both parents work and child is 3-4 years old.",
+            link: OFFICIAL_LINKS.schemes.walesOffer
+          });
+        } else {
+          list.push({
+            id: 'wales-early-ed',
+            title: 'Early Years Education (10h)',
+            category: 'Universal',
+            description: 'Minimum of 10 hours per week of early years education for all 3-4 year olds.',
+            hours: 10,
+            type: 'funding',
+            reason: "Universal entitlement for all 3-4 year olds in Wales.",
+            link: OFFICIAL_LINKS.schemes.walesOffer
+          });
+        }
+      }
+      if (data.childAge === '2y') {
+        list.push({
+          id: 'wales-flying-start',
+          title: 'Flying Start (12.5h)',
+          category: 'Support-Based',
+          description: '12.5 hours of funded childcare for 2-year-olds in Flying Start areas.',
+          hours: 12.5,
+          type: 'funding',
+          reason: "Available for 2-year-olds in Flying Start areas (usually postcode dependent).",
+          link: OFFICIAL_LINKS.schemes.walesFlyingStart
+        });
+      }
+    }
+
+    // --- NORTHERN IRELAND LOGIC ---
+    if (data.location === 'Northern Ireland') {
+      if (data.childAge === '3-4y') {
+        list.push({
+          id: 'ni-preschool',
+          title: 'Pre-School Education (12.5h)',
+          category: 'Universal',
+          description: '12.5 hours per week (2.5 hours a day) of funded pre-school education.',
+          hours: 12.5,
+          type: 'funding',
+          reason: "Universal for children in the year before they start primary school.",
+          link: OFFICIAL_LINKS.schemes.niPreschool
+        });
+      }
+    }
+
+    // --- FINANCIAL SUPPORT (UK WIDE) ---
+    if (data.benefits.includes('Universal Credit') || (isWorking && hasBenefits)) {
         list.push({
             id: 'uc-childcare',
             title: 'Universal Credit Childcare',
@@ -114,21 +177,20 @@ const Eligibility: React.FC = () => {
             description: 'Claim back up to 85% of your costs if you are working.',
             hours: 0,
             type: 'financial-support',
-            reason: "Available to help working families on lower incomes cover childcare costs.",
+            reason: "Available for working families on Universal Credit to help cover up to 85% of costs.",
             link: "https://www.gov.uk/help-with-childcare-costs/universal-credit"
         });
     }
 
-    // Tax-Free Childcare
     const tfcEligible = workingFamiliesEligible && data.childAge !== '5plus' && !data.benefits.includes('Universal Credit');
     list.push({
       id: 'tfc',
       title: 'Tax-Free Childcare (20%)',
       category: 'Financial',
-      description: 'Government top-up: £2 for every £8 you pay, up to £2,000/year.',
+      description: 'Government top-up: £2 for every £8 you pay, up to £2,000/year per child.',
       hours: 0,
       type: 'financial-support',
-      reason: tfcEligible ? "Qualified based on work status and income thresholds." : "Note: You cannot use this if you claim Universal Credit.",
+      reason: tfcEligible ? "Qualified based on work status and income. Max £500 every 3 months." : "Note: Not available if you are currently claiming Universal Credit.",
       link: OFFICIAL_LINKS.schemes.taxFreeChildcare
     });
 
@@ -305,7 +367,7 @@ const Eligibility: React.FC = () => {
 
           {/* Results List In Main Column */}
           <div className="space-y-6">
-             <h3 className="text-xl font-black text-slate-900 px-4">Qualified Schemes</h3>
+             <h3 className="text-xl font-black text-slate-900 px-4">Qualified Schemes for {data.location}</h3>
              {eligibleList.map(scheme => (
                 <div key={scheme.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-teal-200 transition-colors flex flex-col md:flex-row gap-8 items-start">
                     <div className="flex-grow">
@@ -342,15 +404,15 @@ const Eligibility: React.FC = () => {
         <div className="lg:sticky lg:top-24">
           <div className="bg-slate-900 rounded-[3.5rem] p-10 md:p-14 text-white shadow-2xl relative border border-slate-800">
             <div className="relative z-10">
-              <span className="text-[11px] font-black text-teal-400 uppercase tracking-[0.3em] block mb-3">Your Entitlement</span>
+              <span className="text-[11px] font-black text-teal-400 uppercase tracking-[0.3em] block mb-3">Your Max Entitlement</span>
               <div className="text-8xl font-black mb-12 tracking-tighter tabular-nums flex items-baseline">
                 {totalFundedHours}<span className="text-2xl ml-2 text-slate-500">hrs</span>
               </div>
               
               <div className="space-y-6 mb-12 pt-10 border-t border-slate-800 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 font-medium">Scheme Status</span>
-                  <span className="font-black text-teal-500 text-xs uppercase tracking-widest">Active for 2026</span>
+                  <span className="text-slate-400 font-medium">Region</span>
+                  <span className="font-black text-teal-500 text-xs uppercase tracking-widest">{data.location}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400 font-medium">Qualified Options</span>
@@ -359,9 +421,9 @@ const Eligibility: React.FC = () => {
               </div>
 
               <div className="p-6 bg-slate-800/50 rounded-3xl border border-slate-700 mb-10">
-                  <h5 className="text-[10px] font-black uppercase tracking-widest text-teal-400 mb-2">Pro Tip</h5>
+                  <h5 className="text-[10px] font-black uppercase tracking-widest text-teal-400 mb-2">Regional Status</h5>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Working parents of children from 9m to 4y are now eligible for the full 30-hour rollout.
+                    Showing latest 2026/27 entitlements based on the {data.location} government criteria.
                   </p>
               </div>
 
