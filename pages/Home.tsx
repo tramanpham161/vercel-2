@@ -11,17 +11,17 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6 text-balance">
-             Childcare funding doesn’t have to be confusing anymore.
+              30 hours of childcare for all. Now a reality.
             </h1>
             <p className="text-xl text-teal-50 mb-10 leading-relaxed font-medium">
-              Check your eligibility for the full 30-hour entitlement, now available to working parents of children from 9 months to 4 years.
+              The 2026 expansion is complete. Check your eligibility, calculate your true monthly costs, and find registered providers near you.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/eligibility" className="bg-white text-teal-700 px-8 py-4 rounded-xl font-bold text-center hover:bg-teal-50 transition shadow-lg">
                 Check Eligibility
               </Link>
-              <Link to="/calculator" className="bg-teal-700 text-white px-8 py-4 rounded-xl font-bold text-center border border-teal-500 hover:bg-teal-800 transition shadow-lg">
-                Estimate My Costs
+              <Link to="/find" className="bg-teal-700 text-white px-8 py-4 rounded-xl font-bold text-center border border-teal-500 hover:bg-teal-800 transition shadow-lg">
+                Find a Provider
               </Link>
             </div>
           </div>
@@ -41,7 +41,7 @@ const Home: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 font-semibold text-slate-500 text-xs">
              <i className="fa-solid fa-calendar-check text-lg"></i>
-             <span>2025/26 Updated Data</span>
+             <span>2026 Updated Data</span>
           </div>
         </div>
       </section>
@@ -52,18 +52,18 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
             <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
               <div className="text-teal-600 text-5xl font-black mb-2 leading-none">30</div>
-              <div className="text-slate-900 font-bold text-lg mb-2">Weekly free hours</div>
-              <p className="text-slate-500 text-sm leading-relaxed">Now available to working parents of all children from 9 months to school age.</p>
+              <div className="text-slate-900 font-bold text-lg mb-2">Weekly Funded Hours</div>
+              <p className="text-slate-500 text-sm leading-relaxed">Full 30-hour support is now active for working parents of all children from 9 months to school age.</p>
             </div>
             <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
               <div className="text-teal-600 text-5xl font-black mb-2 leading-none">£2k</div>
-              <div className="text-slate-900 font-bold text-lg mb-2">Tax-free savings</div>
-              <p className="text-slate-500 text-sm leading-relaxed">Maximum government top-up per child per year to help pay your bills.</p>
+              <div className="text-slate-900 font-bold text-lg mb-2">Tax-Free Savings</div>
+              <p className="text-slate-500 text-sm leading-relaxed">Maximum government top-up per child per year to help pay your provider directly through HMRC.</p>
             </div>
             <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-shadow duration-300">
               <div className="text-teal-600 text-5xl font-black mb-2 leading-none">85%</div>
-              <div className="text-slate-900 font-bold text-lg mb-2">Cost recovery</div>
-              <p className="text-slate-500 text-sm leading-relaxed">Maximum amount working parents can claim back through Universal Credit.</p>
+              <div className="text-slate-900 font-bold text-lg mb-2">Universal Credit</div>
+              <p className="text-slate-500 text-sm leading-relaxed">Maximum claim back for working parents on Universal Credit, covering significant childcare costs.</p>
             </div>
           </div>
 
@@ -79,12 +79,12 @@ const Home: React.FC = () => {
               </div>
             </div>
             <div className="lg:w-1/2">
-              <h2 className="text-3xl md:text-5xl font-black mb-8 text-slate-900 leading-tight">Empowering families with clear cost estimates.</h2>
+              <h2 className="text-3xl md:text-5xl font-black mb-8 text-slate-900 leading-tight">Your Complete Childcare Toolkit.</h2>
               <div className="space-y-8">
                 {[
-                  { title: 'Full 30-hour expansion', text: 'The government rollout is now complete. Working parents of toddlers and infants (9m+) can access full 30-hour support.' },
-                  { title: 'Tax-free childcare integration', text: 'We calculate your net out-of-pocket costs after both funded hours and the 20% Tax-Free top-up.' },
-                  { title: 'Flexible care pro-rating', text: 'Calculations adjusted for "stretched" funding if your child attends nursery year-round (51 weeks).' },
+                  { title: 'Full 30-Hour Eligibility', text: 'Check if you qualify for the expanded working parents entitlement (9 months up to school age).' },
+                  { title: 'Interactive Cost Estimates', text: 'Our calculator factor in funded hours, regional averages, and Tax-Free Childcare savings.' },
+                  { title: 'Local Provider Search', text: 'Find registered nurseries and preschools near your postcode that accept funded hours.' },
                 ].map((benefit, i) => (
                   <div key={i} className="flex gap-5">
                     <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center flex-shrink-0 text-teal-600">
@@ -99,7 +99,7 @@ const Home: React.FC = () => {
               </div>
               <div className="mt-12">
                 <Link to="/eligibility" className="inline-flex items-center gap-3 bg-teal-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-teal-700 transition shadow-xl shadow-teal-600/20">
-                  Check My Eligibility <i className="fa-solid fa-arrow-right"></i>
+                  Get Started <i className="fa-solid fa-arrow-right"></i>
                 </Link>
               </div>
             </div>
@@ -111,13 +111,13 @@ const Home: React.FC = () => {
       <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl md:text-5xl font-black mb-8">Want a clearer picture of your childcare costs?</h2>
+          <h2 className="text-3xl md:text-5xl font-black mb-8">Ready to find local support?</h2>
           <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
-            Our tool helps you see the true cost of childcare after all entitlements are applied.
+            Our 2026 provider finder helps you locate nurseries and preschools currently participating in the funded hours scheme.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link to="/calculator" className="bg-teal-600 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-teal-500 transition shadow-2xl shadow-teal-600/20">
-              Start Cost Estimation
+            <Link to="/find" className="bg-teal-600 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-teal-500 transition shadow-2xl shadow-teal-600/20">
+              Search for Providers
             </Link>
           </div>
         </div>
