@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Provider } from '../types';
 
@@ -27,10 +26,10 @@ const FindProvider: React.FC = () => {
     setTimeout(() => {
       setLoading(false);
       setShowAdvice(true);
-    }, 800);
+    }, 600);
   };
 
-  const useLocation = () => {
+  const handleUseLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((pos) => {
         // In a real app, reverse geocode here. For demo, we'll set a sample.
@@ -69,7 +68,7 @@ const FindProvider: React.FC = () => {
                         />
                         <button 
                             type="button"
-                            onClick={useLocation}
+                            onClick={handleUseLocation}
                             className="absolute right-4 top-1/2 -translate-y-1/2 text-teal-600 hover:text-teal-700 transition"
                         >
                             <i className="fa-solid fa-location-crosshairs text-xl"></i>
@@ -91,6 +90,22 @@ const FindProvider: React.FC = () => {
                 <div className="flex items-center justify-between px-6">
                     <h3 className="text-xl font-black text-slate-900">Nearby Providers</h3>
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{mockProviders.length} results found</span>
+                </div>
+
+                {/* Official Directory Disclaimer */}
+                <div className="mx-6 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-start gap-3">
+                  <i className="fa-solid fa-circle-info text-teal-600 mt-1"></i>
+                  <p className="text-sm text-teal-800 font-medium">
+                    This list is for illustrative purposes. For the full official directory of registered providers in your specific area, please check the{' '}
+                    <a 
+                      href="https://www.gov.uk/find-free-early-education" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="font-bold underline hover:text-teal-600 transition"
+                    >
+                      official Gov.uk finder
+                    </a>.
+                  </p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -123,7 +138,7 @@ const FindProvider: React.FC = () => {
                                     View Details
                                 </button>
                                 <a 
-                                    href="https://www.childcare.co.uk" target="_blank"
+                                    href="https://www.childcare.co.uk" target="_blank" rel="noopener noreferrer"
                                     className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-slate-400 hover:text-teal-600 hover:border-teal-200 transition"
                                 >
                                     <i className="fa-solid fa-external-link"></i>
@@ -181,14 +196,14 @@ const FindProvider: React.FC = () => {
                         <h5 className="text-[10px] font-black uppercase tracking-widest text-teal-400 mb-6 italic">Quick Resources</h5>
                         <div className="space-y-4">
                             <a 
-                                href="https://www.gov.uk/find-free-early-education" target="_blank"
+                                href="https://www.gov.uk/find-free-early-education" target="_blank" rel="noopener noreferrer"
                                 className="w-full py-4 bg-slate-800 border border-slate-700 rounded-2xl flex items-center justify-between px-6 hover:bg-slate-700 transition group"
                             >
                                 <span className="font-bold text-xs">Gov.uk Directory</span>
                                 <i className="fa-solid fa-chevron-right text-[10px] text-slate-500 group-hover:text-teal-400"></i>
                             </a>
                             <a 
-                                href="https://www.childcare.co.uk/find/Nurseries/2-year-old-free-childcare" target="_blank"
+                                href="https://www.childcare.co.uk/find/Nurseries/2-year-old-free-childcare" target="_blank" rel="noopener noreferrer"
                                 className="w-full py-4 bg-slate-800 border border-slate-700 rounded-2xl flex items-center justify-between px-6 hover:bg-slate-700 transition group"
                             >
                                 <span className="font-bold text-xs">Childcare.co.uk 2y Tool</span>
