@@ -1,32 +1,64 @@
 import React, { useState } from 'react';
 import { Provider } from '../types';
+import { GoogleGenAI, Type } from '@google/genai';
 
 const FindProvider: React.FC = () => {
   const [postcode, setPostcode] = useState('');
   const [loading, setLoading] = useState(false);
   const [showAdvice, setShowAdvice] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [results, setResults] = useState<Provider[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  // Simulated Providers based on common types
-  const mockProviders: Provider[] = [
-    { id: '1', name: 'Sunshine Day Nursery', type: 'Nursery', rating: 'Outstanding', distance: '0.4 miles', offers: ['9m+', '2y', '30h'], address: '12 Primary Lane, London' },
-    { id: '2', name: 'Little Explorers Preschool', type: 'Preschool', rating: 'Good', distance: '0.8 miles', offers: ['2y', '30h'], address: 'St. Marys Hall, High Street' },
-    { id: '3', name: 'Sarah\'s Home Childminding', type: 'Childminder', rating: 'Outstanding', distance: '1.2 miles', offers: ['9m+', '30h'], address: 'Residential Area, London' },
-    { id: '4', name: 'Bluebell Montessori', type: 'Nursery', rating: 'Outstanding', distance: '1.5 miles', offers: ['2y', '30h'], address: 'Greenway Business Park' },
-  ];
-
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!postcode) return;
     
     setLoading(true);
     setIsSearching(true);
-    
-    // Simulate a brief loading state for UX
-    setTimeout(() => {
-      setLoading(false);
+    setError(null);
+    setResults([]);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Generate a list of 6 realistic childcare providers (nurseries, childminders, preschools) near the UK postcode area: ${postcode}. 
+                  The names and addresses should feel authentic to that specific part of the UK.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                name: { type: Type.STRING },
+                type: { type: Type.STRING, description: 'e.g. Nursery, Childminder, or Preschool' },
+                rating: { type: Type.STRING, description: 'e.g. Outstanding, Good, or Requires Improvement' },
+                distance: { type: Type.STRING, description: 'e.g. 0.3 miles' },
+                offers: { 
+                  type: Type.ARRAY, 
+                  items: { type: Type.STRING },
+                  description: 'List of funding tags like 9m+, 2y, or 30h'
+                },
+                address: { type: Type.STRING }
+              },
+              required: ["id", "name", "type", "rating", "distance", "offers", "address"]
+            }
+          }
+        }
+      });
+
+      const data = JSON.parse(response.text);
+      setResults(data);
       setShowAdvice(true);
-    }, 600);
+    } catch (err) {
+      console.error("Search error:", err);
+      setError("We couldn't retrieve results for that area. Please try again or check the official GOV.UK link.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleUseLocation = () => {
@@ -76,9 +108,10 @@ const FindProvider: React.FC = () => {
                     </div>
                     <button 
                         type="submit"
-                        className="bg-slate-900 text-white px-10 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-teal-600 transition shadow-xl active:scale-95 flex items-center justify-center gap-3"
+                        disabled={loading}
+                        className="bg-slate-900 text-white px-10 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-teal-600 transition shadow-xl active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                     >
-                        Search Area <i className="fa-solid fa-arrow-right"></i>
+                        {loading ? 'Searching...' : 'Search Area'} <i className="fa-solid fa-arrow-right"></i>
                     </button>
                 </div>
             </form>
@@ -89,14 +122,14 @@ const FindProvider: React.FC = () => {
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="flex items-center justify-between px-6">
                     <h3 className="text-xl font-black text-slate-900">Nearby Providers</h3>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{mockProviders.length} results found</span>
+                    {!loading && <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{results.length} results found</span>}
                 </div>
 
                 {/* Official Directory Disclaimer */}
                 <div className="mx-6 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-start gap-3">
                   <i className="fa-solid fa-circle-info text-teal-600 mt-1"></i>
-                  <p className="text-sm text-teal-800 font-medium">
-                    This list is for illustrative purposes. For the full official directory of registered providers in your specific area, please check the{' '}
+                  <p className="text-sm text-teal-800 font-medium leading-relaxed">
+                    This list is AI-generated for illustrative purposes. For the full official directory of registered providers in your specific area, please check the{' '}
                     <a 
                       href="https://www.gov.uk/find-free-early-education" 
                       target="_blank" 
@@ -107,9 +140,20 @@ const FindProvider: React.FC = () => {
                     </a>.
                   </p>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {mockProviders.map((provider) => (
+
+                {loading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="bg-slate-50 h-64 rounded-[2.5rem] animate-pulse"></div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <div className="p-12 text-center">
+                    <p className="text-red-500 font-bold">{error}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {results.map((provider) => (
                         <div key={provider.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-teal-200 transition-all group">
                             <div className="flex justify-between items-start mb-6">
                                 <div>
@@ -146,7 +190,8 @@ const FindProvider: React.FC = () => {
                             </div>
                         </div>
                     ))}
-                </div>
+                  </div>
+                )}
             </div>
           )}
         </div>
@@ -175,13 +220,13 @@ const FindProvider: React.FC = () => {
                                 <div>
                                     <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">Council Directory</h6>
                                     <p className="text-slate-300 text-sm leading-relaxed font-medium italic">
-                                        For the area {postcode}, your local council holds the definitive list of providers who are registered for the 9-month, 2-year, and 30-hour entitlements.
+                                        For the area {postcode}, your local council holds the definitive list of providers who are registered for the 2026 funding entitlements.
                                     </p>
                                 </div>
                                 <div>
-                                    <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">2026 Insider Tip</h6>
+                                    <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">Waitlist Alert</h6>
                                     <p className="text-slate-300 text-sm leading-relaxed font-medium italic">
-                                        Waitlists for September 2026 starts are already opening. Contact your preferred provider immediately to secure your "30 Hours" place, as these are often capped.
+                                        Demand in {postcode.split(' ')[0]} is currently high. Contact your top three choices immediately to secure your start date.
                                     </p>
                                 </div>
                             </div>
