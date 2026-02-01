@@ -12,7 +12,8 @@ const FindProvider: React.FC = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!postcode) return;
+    const cleanPostcode = postcode.trim().toUpperCase();
+    if (!cleanPostcode) return;
     
     setLoading(true);
     setIsSearching(true);
@@ -20,16 +21,26 @@ const FindProvider: React.FC = () => {
     setResults([]);
 
     try {
-      // Create a fresh instance to ensure we use the latest injected API_KEY
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // 1. Check if API Key exists
+      const apiKey = process.env.API_KEY;
+      if (!apiKey || apiKey === 'undefined') {
+        throw new Error("MISSING_API_KEY");
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
       
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: {
           parts: [{
-            text: `Generate a list of 6 realistic childcare providers (nurseries, childminders, preschools) near the UK postcode area: ${postcode}. 
-                  The names and addresses MUST feel authentic to that specific part of the UK.
-                  Provide various Ofsted ratings (Outstanding, Good) and realistic distances within 5 miles.`
+            text: `Act as a childcare directory API. Generate a JSON array of 6 realistic but fictional childcare providers (nurseries, childminders, preschools) located near the UK postcode area: ${cleanPostcode}. 
+                  
+                  Requirements:
+                  - The names must sound British and local to the area.
+                  - Addresses must be formatted correctly for the UK.
+                  - Ratings must be either 'Outstanding' or 'Good'.
+                  - Distances must be between 0.2 and 4.5 miles.
+                  - Offers must include at least two of: ['9m+', '2y', '3-4y', '30h'].`
           }]
         },
         config: {
@@ -56,29 +67,40 @@ const FindProvider: React.FC = () => {
         }
       });
 
-      const responseText = response.text || '';
-      // Clean up the response text in case the model wrapped it in markdown code blocks
-      const cleanJson = responseText.replace(/```json|```/g, '').trim();
-      
-      if (!cleanJson) {
-        throw new Error("Empty response from AI");
+      const responseText = response.text;
+      if (!responseText) {
+        throw new Error("EMPTY_RESPONSE");
       }
 
+      // Ensure we only have the JSON part (strip markdown if model ignores responseMimeType)
+      const jsonStart = responseText.indexOf('[');
+      const jsonEnd = responseText.lastIndexOf(']') + 1;
+      const cleanJson = responseText.substring(jsonStart, jsonEnd);
+
       const data = JSON.parse(cleanJson);
+      
+      if (!Array.isArray(data)) {
+        throw new Error("INVALID_FORMAT");
+      }
+
       setResults(data);
       setShowAdvice(true);
     } catch (err: any) {
-      console.error("FULL ERROR DETAILS:", err);
+      console.error("Search failed:", err);
       
-      // Determine if it's an API Key issue for the user
-      let message = "We couldn't retrieve results for that area. Please check the official GOV.UK link below.";
-      if (err.message?.includes('401') || err.message?.includes('API_KEY')) {
-        message = "API Configuration Error: Please ensure the API_KEY environment variable is set in your project settings.";
-      } else if (err.message?.includes('500') || err.message?.includes('safety')) {
-        message = "The search service is temporarily unavailable or blocked. Please try a different postcode.";
+      let userFriendlyMessage = "We couldn't retrieve results for that area. Please check the official GOV.UK link below.";
+      
+      if (err.message === "MISSING_API_KEY") {
+        userFriendlyMessage = "API Key not found. Please ensure the API_KEY environment variable is set in your Vercel project settings.";
+      } else if (err.message.includes('401') || err.message.includes('API key not valid')) {
+        userFriendlyMessage = "The API key provided is invalid. Please check your credentials.";
+      } else if (err.message.includes('safety') || err.message.includes('blocked')) {
+        userFriendlyMessage = "The search was blocked by safety filters. Please try a different postcode.";
+      } else if (err.message === "EMPTY_RESPONSE" || err.message === "INVALID_FORMAT") {
+        userFriendlyMessage = "The provider database returned an unexpected response. Please try searching again.";
       }
-      
-      setError(message);
+
+      setError(userFriendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -87,7 +109,6 @@ const FindProvider: React.FC = () => {
   const handleUseLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((pos) => {
-        // Simple demo fallback for location
         setPostcode('SW1A 1AA');
       }, (err) => {
         console.warn("Location access denied", err);
@@ -107,7 +128,6 @@ const FindProvider: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
         <div className="lg:col-span-2 space-y-8">
           
-          {/* Search Bar Container */}
           <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8">
                 <i className="fa-solid fa-magnifying-glass-location text-teal-50 text-7xl -rotate-12"></i>
@@ -142,7 +162,6 @@ const FindProvider: React.FC = () => {
             </form>
           </div>
 
-          {/* Results Area */}
           {isSearching && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="flex items-center justify-between px-6">
@@ -150,11 +169,10 @@ const FindProvider: React.FC = () => {
                     {!loading && results.length > 0 && <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{results.length} results found</span>}
                 </div>
 
-                {/* Official Directory Disclaimer */}
                 <div className="mx-6 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-start gap-3">
                   <i className="fa-solid fa-circle-info text-teal-600 mt-1"></i>
                   <p className="text-sm text-teal-800 font-medium leading-relaxed">
-                    This list is AI-generated for illustrative purposes. For the full official directory of registered providers in your specific area, please check the{' '}
+                    This list is AI-generated for illustrative purposes. For the official directory of registered providers in your area, please check the{' '}
                     <a 
                       href="https://www.gov.uk/find-free-early-education" 
                       target="_blank" 
@@ -174,7 +192,7 @@ const FindProvider: React.FC = () => {
                   </div>
                 ) : error ? (
                   <div className="p-12 text-center bg-red-50 rounded-[3rem] border border-red-100 mx-6">
-                    <i className="fa-solid fa-triangle-exclamation text-red-400 text-3xl mb-4"></i>
+                    <i className="fa-solid fa-circle-exclamation text-red-400 text-3xl mb-4"></i>
                     <p className="text-red-700 font-bold max-w-sm mx-auto leading-relaxed">{error}</p>
                     <button 
                       onClick={handleSearch}
@@ -228,7 +246,6 @@ const FindProvider: React.FC = () => {
           )}
         </div>
 
-        {/* Sidebar: Advice & Official Links */}
         <div className="lg:sticky lg:top-24 space-y-8">
             <div className="bg-slate-900 rounded-[3.5rem] p-10 md:p-14 text-white shadow-2xl relative border border-slate-800">
                 <div className="relative z-10">
@@ -252,13 +269,13 @@ const FindProvider: React.FC = () => {
                                 <div>
                                     <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">Council Directory</h6>
                                     <p className="text-slate-300 text-sm leading-relaxed font-medium italic">
-                                        For the area {postcode}, your local council holds the definitive list of providers who are registered for the 2026 funding entitlements.
+                                        For {postcode}, your local council holds the definitive list of providers registered for the 2026 funding entitlements.
                                     </p>
                                 </div>
                                 <div>
-                                    <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">Waitlist Alert</h6>
+                                    <h6 className="text-teal-400 font-black text-[10px] uppercase tracking-widest mb-2">Availability</h6>
                                     <p className="text-slate-300 text-sm leading-relaxed font-medium italic">
-                                        Demand in {postcode.split(' ')[0]} is currently high. Contact your top three choices immediately to secure your start date.
+                                        Childcare demand in this area is high. We recommend contacting providers as soon as you have your eligibility code.
                                     </p>
                                 </div>
                             </div>
@@ -280,10 +297,10 @@ const FindProvider: React.FC = () => {
                                 <i className="fa-solid fa-chevron-right text-[10px] text-slate-500 group-hover:text-teal-400"></i>
                             </a>
                             <a 
-                                href="https://www.childcare.co.uk/find/Nurseries/2-year-old-free-childcare" target="_blank" rel="noopener noreferrer"
+                                href="https://www.childcare.co.uk" target="_blank" rel="noopener noreferrer"
                                 className="w-full py-4 bg-slate-800 border border-slate-700 rounded-2xl flex items-center justify-between px-6 hover:bg-slate-700 transition group"
                             >
-                                <span className="font-bold text-xs">Childcare.co.uk 2y Tool</span>
+                                <span className="font-bold text-xs">Childcare.co.uk Tool</span>
                                 <i className="fa-solid fa-chevron-right text-[10px] text-slate-500 group-hover:text-teal-400"></i>
                             </a>
                         </div>
@@ -294,7 +311,7 @@ const FindProvider: React.FC = () => {
             <div className="bg-teal-600 rounded-[2.5rem] p-10 text-white shadow-xl shadow-teal-600/10">
                 <h4 className="text-xl font-black mb-4">Did you know?</h4>
                 <p className="text-teal-50 text-sm leading-relaxed font-medium">
-                    Providers often have separate waiting lists for funded spaces. We recommend contacting nurseries at least 6 months before your child's intended start date.
+                    The 30-hour entitlement is term-time only (38 weeks), but most nurseries will allow you to "stretch" these hours across the full year.
                 </p>
             </div>
         </div>
