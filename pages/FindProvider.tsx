@@ -20,11 +20,18 @@ const FindProvider: React.FC = () => {
     setResults([]);
 
     try {
+      // Create a fresh instance to ensure we use the latest injected API_KEY
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Generate a list of 6 realistic childcare providers (nurseries, childminders, preschools) near the UK postcode area: ${postcode}. 
-                  The names and addresses should feel authentic to that specific part of the UK.`,
+        contents: {
+          parts: [{
+            text: `Generate a list of 6 realistic childcare providers (nurseries, childminders, preschools) near the UK postcode area: ${postcode}. 
+                  The names and addresses MUST feel authentic to that specific part of the UK.
+                  Provide various Ofsted ratings (Outstanding, Good) and realistic distances within 5 miles.`
+          }]
+        },
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -34,13 +41,12 @@ const FindProvider: React.FC = () => {
               properties: {
                 id: { type: Type.STRING },
                 name: { type: Type.STRING },
-                type: { type: Type.STRING, description: 'e.g. Nursery, Childminder, or Preschool' },
-                rating: { type: Type.STRING, description: 'e.g. Outstanding, Good, or Requires Improvement' },
-                distance: { type: Type.STRING, description: 'e.g. 0.3 miles' },
+                type: { type: Type.STRING },
+                rating: { type: Type.STRING },
+                distance: { type: Type.STRING },
                 offers: { 
                   type: Type.ARRAY, 
-                  items: { type: Type.STRING },
-                  description: 'List of funding tags like 9m+, 2y, or 30h'
+                  items: { type: Type.STRING }
                 },
                 address: { type: Type.STRING }
               },
@@ -50,12 +56,29 @@ const FindProvider: React.FC = () => {
         }
       });
 
-      const data = JSON.parse(response.text);
+      const responseText = response.text || '';
+      // Clean up the response text in case the model wrapped it in markdown code blocks
+      const cleanJson = responseText.replace(/```json|```/g, '').trim();
+      
+      if (!cleanJson) {
+        throw new Error("Empty response from AI");
+      }
+
+      const data = JSON.parse(cleanJson);
       setResults(data);
       setShowAdvice(true);
-    } catch (err) {
-      console.error("Search error:", err);
-      setError("We couldn't retrieve results for that area. Please try again or check the official GOV.UK link.");
+    } catch (err: any) {
+      console.error("FULL ERROR DETAILS:", err);
+      
+      // Determine if it's an API Key issue for the user
+      let message = "We couldn't retrieve results for that area. Please check the official GOV.UK link below.";
+      if (err.message?.includes('401') || err.message?.includes('API_KEY')) {
+        message = "API Configuration Error: Please ensure the API_KEY environment variable is set in your project settings.";
+      } else if (err.message?.includes('500') || err.message?.includes('safety')) {
+        message = "The search service is temporarily unavailable or blocked. Please try a different postcode.";
+      }
+      
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -64,8 +87,10 @@ const FindProvider: React.FC = () => {
   const handleUseLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((pos) => {
-        // In a real app, reverse geocode here. For demo, we'll set a sample.
+        // Simple demo fallback for location
         setPostcode('SW1A 1AA');
+      }, (err) => {
+        console.warn("Location access denied", err);
       });
     }
   };
@@ -122,7 +147,7 @@ const FindProvider: React.FC = () => {
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="flex items-center justify-between px-6">
                     <h3 className="text-xl font-black text-slate-900">Nearby Providers</h3>
-                    {!loading && <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{results.length} results found</span>}
+                    {!loading && results.length > 0 && <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{results.length} results found</span>}
                 </div>
 
                 {/* Official Directory Disclaimer */}
@@ -143,13 +168,20 @@ const FindProvider: React.FC = () => {
 
                 {loading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                    {[1, 2, 3, 4].map(i => (
+                    {[1, 2, 3, 4, 5, 6].map(i => (
                       <div key={i} className="bg-slate-50 h-64 rounded-[2.5rem] animate-pulse"></div>
                     ))}
                   </div>
                 ) : error ? (
-                  <div className="p-12 text-center">
-                    <p className="text-red-500 font-bold">{error}</p>
+                  <div className="p-12 text-center bg-red-50 rounded-[3rem] border border-red-100 mx-6">
+                    <i className="fa-solid fa-triangle-exclamation text-red-400 text-3xl mb-4"></i>
+                    <p className="text-red-700 font-bold max-w-sm mx-auto leading-relaxed">{error}</p>
+                    <button 
+                      onClick={handleSearch}
+                      className="mt-6 text-sm font-black text-red-600 uppercase tracking-widest hover:text-red-800 transition"
+                    >
+                      Try Again <i className="fa-solid fa-rotate-right ml-1"></i>
+                    </button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
