@@ -124,6 +124,14 @@ const FindProvider: React.FC = () => {
 
           {isSearching && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                {/* Rough Search Warning */}
+                <div className="mx-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
+                  <i className="fa-solid fa-triangle-exclamation text-amber-600 mt-1"></i>
+                  <p className="text-sm text-amber-900 font-medium leading-relaxed">
+                    Note: This is only a rough search for estimation purposes. Please check your official local council directory to be sure of current registration status and availability.
+                  </p>
+                </div>
+
                 {/* Search Resources Hub */}
                 <div className="mx-6 p-6 bg-slate-900 rounded-[2.5rem] border border-slate-800 text-white flex flex-col md:flex-row items-center gap-6 shadow-xl">
                   <div className="bg-teal-600 w-16 h-16 rounded-3xl flex items-center justify-center flex-shrink-0">
