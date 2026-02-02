@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Provider } from '../types';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -14,7 +13,8 @@ const FindProvider: React.FC = () => {
   const mockResults: Provider[] = [
     { id: '1', name: 'Little Explorers Nursery', type: 'Nursery', rating: 'Outstanding', distance: '0.4 miles', offers: ['9m+', '2y', '3-4y'], address: '12 High Street, London' },
     { id: '2', name: 'Sunny Days Childminding', type: 'Childminder', rating: 'Good', distance: '0.8 miles', offers: ['2y', '30h'], address: '45 Park Avenue, London' },
-    { id: '3', name: 'St. Mary\'s Preschool', type: 'Preschool', rating: 'Good', distance: '1.2 miles', offers: ['3-4y', '30h'], address: 'Church Lane, London' }
+    { id: '3', name: 'St. Mary\'s Preschool', type: 'Preschool', rating: 'Good', distance: '1.2 miles', offers: ['3-4y', '30h'], address: 'Church Lane, London' },
+    { id: '4', name: 'Bright Beginnings Daycare', type: 'Nursery', rating: 'Outstanding', distance: '1.5 miles', offers: ['9m+', '30h'], address: '88 Station Road, London' }
   ];
 
   const handleSearch = async (e?: React.FormEvent, isDemo = false) => {
@@ -124,12 +124,23 @@ const FindProvider: React.FC = () => {
 
           {isSearching && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="mx-6 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-start gap-3">
-                  <i className="fa-solid fa-circle-info text-teal-600 mt-1"></i>
-                  <p className="text-sm text-teal-800 font-medium leading-relaxed">
-                    This list is AI-generated for illustrative purposes. For official data, check the{' '}
-                    <a href="https://www.gov.uk/find-free-early-education" target="_blank" rel="noopener noreferrer" className="font-bold underline">official Gov.uk finder</a>.
-                  </p>
+                {/* Official Directory Header */}
+                <div className="mx-6 p-6 bg-slate-900 rounded-[2.5rem] border border-slate-800 text-white flex flex-col md:flex-row items-center gap-6 shadow-xl">
+                  <div className="bg-teal-600 w-16 h-16 rounded-3xl flex items-center justify-center flex-shrink-0">
+                    <i className="fa-solid fa-building-columns text-2xl"></i>
+                  </div>
+                  <div className="flex-grow text-center md:text-left">
+                    <h3 className="text-lg font-black mb-1">Definitive Local Council List</h3>
+                    <p className="text-slate-400 text-xs font-medium">To apply for a space, you must use your local council's official directory.</p>
+                  </div>
+                  <a 
+                    href="https://www.gov.uk/find-local-council" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-500 hover:text-white transition"
+                  >
+                    Find My Council Directory <i className="fa-solid fa-arrow-up-right-from-square ml-2"></i>
+                  </a>
                 </div>
 
                 {loading ? (
@@ -159,21 +170,43 @@ const FindProvider: React.FC = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {results.map((provider) => (
-                        <div key={provider.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-teal-200 transition-all group">
+                        <div key={provider.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-teal-200 transition-all group flex flex-col h-full">
                             <div className="flex justify-between items-start mb-6">
                                 <div>
                                     <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest block mb-1">{provider.type}</span>
-                                    <h4 className="text-xl font-black text-slate-900">{provider.name}</h4>
+                                    <h4 className="text-xl font-black text-slate-900 group-hover:text-teal-700 transition">{provider.name}</h4>
                                 </div>
-                                <span className="bg-slate-900 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase">{provider.rating}</span>
+                                <span className="bg-slate-900 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">{provider.rating}</span>
                             </div>
-                            <p className="text-slate-400 text-xs mb-6"><i className="fa-solid fa-location-dot mr-2"></i>{provider.address} • {provider.distance}</p>
-                            <div className="flex flex-wrap gap-2 mb-8">
+                            
+                            <p className="text-slate-400 text-xs mb-6 flex items-center gap-2">
+                                <i className="fa-solid fa-location-dot"></i> {provider.address} • {provider.distance}
+                            </p>
+
+                            <div className="flex flex-wrap gap-2 mb-8 flex-grow">
                                 {provider.offers.map(tag => (
-                                    <span key={tag} className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase">{tag} Funded</span>
+                                    <span key={tag} className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase">
+                                        {tag} Funded
+                                    </span>
                                 ))}
                             </div>
-                            <button className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-teal-600 transition">View Details</button>
+
+                            <div className="pt-6 border-t border-slate-50 flex flex-col gap-3">
+                                <a 
+                                  href="https://www.gov.uk/find-free-early-education" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="w-full py-4 bg-slate-50 border border-slate-100 text-slate-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-600 hover:text-white hover:border-teal-600 transition flex items-center justify-center gap-2"
+                                >
+                                  Check Official Council List <i className="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                                </a>
+                                <a 
+                                    href={`https://www.childcare.co.uk/search?postcode=${postcode}`} target="_blank" rel="noopener noreferrer"
+                                    className="w-full py-3 text-slate-400 text-center font-bold text-[10px] uppercase tracking-widest hover:text-teal-600 transition"
+                                >
+                                    Search Reviews on Childcare.co.uk
+                                </a>
+                            </div>
                         </div>
                     ))}
                   </div>
@@ -190,16 +223,32 @@ const FindProvider: React.FC = () => {
                 </div>
                 <div className="min-h-[150px]">
                     {showAdvice ? (
-                        <p className="text-slate-300 text-sm leading-relaxed italic">
-                            For {postcode || 'your area'}, demand for funded spaces is high. We recommend contacting at least 3 nurseries to compare availability for the 2026 intake.
-                        </p>
+                        <div className="space-y-4">
+                            <p className="text-slate-300 text-sm leading-relaxed italic">
+                                For {postcode || 'your area'}, funding places are allocated through your specific local authority's <strong>Family Information Service (FIS)</strong>.
+                            </p>
+                            <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700">
+                                <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest block mb-2 underline">What to do next:</span>
+                                <ul className="text-[11px] text-slate-400 space-y-2 list-disc pl-4">
+                                    <li>Get your 30-hour eligibility code from HMRC.</li>
+                                    <li>Visit your council directory (link on results).</li>
+                                    <li>Provide your code to your chosen registered nursery.</li>
+                                </ul>
+                            </div>
+                        </div>
                     ) : (
                         <p className="text-slate-500 text-sm leading-relaxed italic">Enter a postcode to see local availability trends and council-specific advice.</p>
                     )}
                 </div>
                 <div className="mt-8 pt-8 border-t border-slate-800 space-y-4">
-                    <a href="https://www.gov.uk/find-free-early-education" target="_blank" className="block p-4 bg-slate-800 rounded-2xl text-xs font-bold hover:bg-slate-700 transition">Official Gov Directory</a>
-                    <a href="https://www.childcare.co.uk" target="_blank" className="block p-4 bg-slate-800 rounded-2xl text-xs font-bold hover:bg-slate-700 transition">Childcare.co.uk Finder</a>
+                    <a href="https://www.gov.uk/find-local-council" target="_blank" rel="noopener noreferrer" className="block p-4 bg-slate-800 border border-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-700 transition flex items-center justify-between">
+                        <span>Local Council Finder</span>
+                        <i className="fa-solid fa-chevron-right text-teal-400"></i>
+                    </a>
+                    <a href="https://www.gov.uk/find-free-early-education" target="_blank" rel="noopener noreferrer" className="block p-4 bg-slate-800 border border-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-700 transition flex items-center justify-between">
+                        <span>Ofsted Reports</span>
+                        <i className="fa-solid fa-chevron-right text-teal-400"></i>
+                    </a>
                 </div>
             </div>
         </div>
