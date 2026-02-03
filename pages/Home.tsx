@@ -79,7 +79,7 @@ const Home: React.FC = () => {
               </div>
             </div>
             <div className="lg:w-1/2">
-              <h2 className="text-3xl md:text-5xl font-black mb-8 text-slate-900 leading-tight">Empowering families with clear cost estimates.</h2>
+              <h2 className="text-3xl md:text-5xl font-black mb-8 text-slate-900 leading-tight"> A simple checker to help UK parents understand funded childcare options</h2>
               <div className="space-y-8">
                 {[
                   { title: 'Full 30-hour expansion', text: 'The government rollout is now complete. Working parents of toddlers and infants (9m+) can access full 30-hour support.' },
