@@ -1,6 +1,64 @@
+
 import React, { useState } from 'react';
 import { Provider } from '../types';
 import { GoogleGenAI, Type } from '@google/genai';
+
+const FeedbackSection: React.FC = () => {
+  const [state, setState] = useState<'initial' | 'comment' | 'thanks'>('initial');
+  const [helpful, setHelpful] = useState<boolean | null>(null);
+
+  if (state === 'thanks') {
+    return (
+      <div className="bg-teal-600 rounded-[2.5rem] p-8 text-white text-center animate-in fade-in zoom-in duration-500">
+        <i className="fa-solid fa-circle-check text-3xl mb-3"></i>
+        <h4 className="font-black text-lg">Thank you for your feedback!</h4>
+        <p className="text-teal-100 text-xs">Your input helps us improve this tool for all parents.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm mt-8">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <h4 className="font-black text-slate-900 text-lg">Was this helpful?</h4>
+          <p className="text-slate-400 text-xs">Help us improve our provider search tool.</p>
+        </div>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => { setHelpful(true); setState('comment'); }}
+            className="px-6 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm text-slate-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition active:scale-95"
+          >
+            <i className="fa-solid fa-thumbs-up mr-2"></i> Yes
+          </button>
+          <button 
+            onClick={() => { setHelpful(false); setState('comment'); }}
+            className="px-6 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition active:scale-95"
+          >
+            <i className="fa-solid fa-thumbs-down mr-2"></i> No
+          </button>
+        </div>
+      </div>
+      
+      {state === 'comment' && (
+        <div className="mt-8 pt-8 border-t border-slate-50 animate-in slide-in-from-top-4 duration-300">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Optional Comment</label>
+          <textarea 
+            placeholder="Tell us what you were looking for..."
+            className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-teal-600 outline-none transition text-sm mb-4"
+            rows={2}
+          />
+          <button 
+            onClick={() => setState('thanks')}
+            className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-teal-600 transition"
+          >
+            Submit Feedback
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const FindProvider: React.FC = () => {
   const [postcode, setPostcode] = useState('');
@@ -186,31 +244,34 @@ const FindProvider: React.FC = () => {
                     <p className="text-red-700 font-bold">{error}</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {results.map((provider) => (
-                        <div key={provider.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-teal-200 transition-all group flex flex-col h-full">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest block mb-1">{provider.type}</span>
-                                    <h4 className="text-xl font-black text-slate-900 group-hover:text-teal-700 transition">{provider.name}</h4>
-                                </div>
-                                <span className="bg-slate-900 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest shrink-0">{provider.rating}</span>
-                            </div>
-                            
-                            <p className="text-slate-400 text-xs mb-6 flex items-center gap-2">
-                                <i className="fa-solid fa-location-dot"></i> {provider.address} • {provider.distance}
-                            </p>
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {results.map((provider) => (
+                          <div key={provider.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-teal-200 transition-all group flex flex-col h-full">
+                              <div className="flex justify-between items-start mb-6">
+                                  <div>
+                                      <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest block mb-1">{provider.type}</span>
+                                      <h4 className="text-xl font-black text-slate-900 group-hover:text-teal-700 transition">{provider.name}</h4>
+                                  </div>
+                                  <span className="bg-slate-900 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest shrink-0">{provider.rating}</span>
+                              </div>
+                              
+                              <p className="text-slate-400 text-xs mb-6 flex items-center gap-2">
+                                  <i className="fa-solid fa-location-dot"></i> {provider.address} • {provider.distance}
+                              </p>
 
-                            <div className="flex flex-wrap gap-2 flex-grow">
-                                {provider.offers.map(tag => (
-                                    <span key={tag} className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase">
-                                        {tag} Funded
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                  </div>
+                              <div className="flex flex-wrap gap-2 flex-grow">
+                                  {provider.offers.map(tag => (
+                                      <span key={tag} className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase">
+                                          {tag} Funded
+                                      </span>
+                                  ))}
+                              </div>
+                          </div>
+                      ))}
+                    </div>
+                    <FeedbackSection />
+                  </>
                 )}
             </div>
           )}
